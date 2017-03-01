@@ -37,7 +37,7 @@ void RandomWorld::createRasters()
 
 int RandomWorld::getAction()
 {
-	return Engine::GeneralState::statistics().getUniformDistValue(0,3);
+	return getId();
 }
 
 void RandomWorld::createAgents()

@@ -32,15 +32,15 @@ void MoveAction::execute( Engine::Agent & agent )
 	}
 	else if (action == 1)
 	{
-		newPosition._x -= 1;
+		newPosition._y += 1;
 	}
 	else if (action == 2)
 	{
-		newPosition._y += 1;
+		newPosition._y -= 1;
 	}
 	else if (action == 3)
 	{
-		newPosition._y -= 1;
+		newPosition._x -= 1;
 	}
 
 	if(world->checkPosition(newPosition))
