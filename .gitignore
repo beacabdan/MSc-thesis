@@ -1,0 +1,6 @@
+*.o
+mpiCode/*
+data/*
+logs/*
+*~
+*dblite
