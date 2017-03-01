@@ -35,6 +35,11 @@ void RandomWorld::createRasters()
 	updateRasterToMaxValues("resourcesStart");
 }
 
+int RandomWorld::getAction()
+{
+	return Engine::GeneralState::statistics().getUniformDistValue(0,3);
+}
+
 void RandomWorld::createAgents()
 {
     std::stringstream logName;

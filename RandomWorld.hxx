@@ -13,7 +13,8 @@ class RandomWorld : public Engine::World
 {
 	void createRasters();
 	void createAgents();
-public:
+public:	
+	int getAction(); 
 	RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);
 	virtual ~RandomWorld();
 };
