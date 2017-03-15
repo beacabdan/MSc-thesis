@@ -9,8 +9,10 @@ namespace Examples
 
 class RandomWorldConfig : public Engine::Config
 {	
-	int _numAgents;
+
 public:
+	int _numAgents;
+
 	RandomWorldConfig( const std::string & xmlFile );
 	virtual ~RandomWorldConfig();
 
