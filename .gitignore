@@ -4,4 +4,4 @@ data/*
 logs/*
 *~
 *dblite
-build/
+build*/
