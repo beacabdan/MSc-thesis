@@ -4,7 +4,6 @@
 #include <RandomWorldConfig.hxx>
 #include <RandomAgent.hxx>
 #include <DynamicRaster.hxx>
-#include <Point2D.hxx>
 #include <GeneralState.hxx>
 #include <Logger.hxx>
 
@@ -17,6 +16,47 @@ RandomWorld::RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler 
 
 RandomWorld::~RandomWorld()
 {
+}
+
+int RandomWorld::_ij2val(Engine::Point2D<int> pos) {
+/*
+ * Convert i,j coordinates in a single scalar so we can put into a Eigen3 Sparse matrix
+*/
+    Engine::Size<int> s = this->getConfig().getSize();
+    return pos._x*s._width + pos._y; //_height
+}
+
+int RandomWorld::_reward(Engine::Point2D<int> pos) {
+    return -1;
+}
+
+void RandomWorld::step()
+{
+  //Step the world 
+  World::step();
+  //Save trajectory information
+	for(auto it=this->beginAgents(); it!=this->endAgents(); it++)
+	{
+		if(!(*it)->exists())
+		{
+			continue;
+		}
+    Engine::Agent * a = (Engine::Agent *) it->get();
+    this->_pos_spr_coeff.push_back(T(
+                  stoi(a->getId()),           //Row is the number of the agent
+                  this->getCurrentTimeStep(), //Col is the timestep
+                  this->_ij2val(
+                     a->getPosition()         //Val is the position, converted to a scalar
+                  )));
+
+    this->_rwd_spr_coeff.push_back(T(
+                  stoi(a->getId()),           //Row is the number of the agent
+                  this->getCurrentTimeStep(), //Col is the timestep
+                  this->_reward(
+                     a->getPosition()         //Val is the position, converted to a scalar
+                  )));
+
+	}
 }
 
 void RandomWorld::createRasters()
