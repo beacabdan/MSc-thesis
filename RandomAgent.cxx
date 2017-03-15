@@ -19,7 +19,8 @@ RandomAgent::~RandomAgent()
 void RandomAgent::selectActions()
 {
 	_actions.push_back(new MoveAction());
-	_actions.push_back(new EatAction());
+   // For now we do not want the agents to die of starvation
+	//_actions.push_back(new EatAction());
 }
 
 void RandomAgent::updateState()
