@@ -54,8 +54,11 @@ void RandomWorld::createAgents()
 			oss << "RandomAgent_" << i;
 			RandomAgent * agent = new RandomAgent(oss.str());
 			addAgent(agent);
-			agent->setRandomPosition();
-	        log_INFO(logName.str(), getWallTime() << " new agent: " << agent);
+      //If we want to apply rollout we need the agents to start always in the same positions
+      //TODO: define a function to set the position on the map instead of putting all of them into the same box
+      Engine::Point2D<int> pos(1,1); 
+			agent->setPosition(pos);
+	    log_INFO(logName.str(), getWallTime() << " new agent: " << agent);
 		}
 	}
 }
