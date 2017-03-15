@@ -51,7 +51,7 @@ void RandomWorld::createAgents()
 		if((i%getNumTasks())==getId())
 		{
 			std::ostringstream oss;
-			oss << "RandomAgent_" << i;
+			oss << i;
 			RandomAgent * agent = new RandomAgent(oss.str());
 			addAgent(agent);
       //If we want to apply rollout we need the agents to start always in the same positions
