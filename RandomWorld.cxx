@@ -77,7 +77,7 @@ void RandomWorld::createRasters()
 
 int RandomWorld::getAction()
 {
-	return getId();
+	return (int)std::rand()%4;
 }
 
 void RandomWorld::createAgents()
