@@ -15,6 +15,9 @@ RandomWorldConfig::~RandomWorldConfig()
 void RandomWorldConfig::loadParams()
 {
 	_numAgents = getParamInt( "numAgents", "value");
+	_rewardPosX = getParamInt( "reward", "xpos");
+	_rewardPosY = getParamInt( "reward", "ypos");
+	_rewardAreaSize = getParamInt( "reward", "size");
 }
 	
 } // namespace Examples

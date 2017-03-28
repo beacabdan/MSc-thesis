@@ -1,9 +1,0 @@
-<?xml version="1.0" ?>
-<config>  
-	<!-- Global simulation parameters -->
-	<output resultsFile="./data/randomWalkers.h5" logsDir="./logs"/>
-	<numSteps value="200" serializeResolution="1"/>
-	<size width="20" height="20"/>
-	<numAgents value="10"/>
-</config>
-
