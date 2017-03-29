@@ -19,37 +19,32 @@ RandomWorld::~RandomWorld()
 {
 }
 
-void RandomWorld::initL(){
+void RandomWorld::initL()
+{
+    for(auto pos:getBoundaries())
+    {
+        std::vector<Engine::Point2D<int>> neighbours;
+        neighbours.push_back(pos);
+        if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x+1, pos._y)))
+            neighbours.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
+        if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x-1, pos._y)))
+            neighbours.push_back(Engine::Point2D<int> (pos._x-1, pos._y));
+        if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x, pos._y+1)))
+            neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1));
+        if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x, pos._y-1)))
+            neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));
 
-  for(auto pos:getBoundaries()) {
-    std::vector<Engine::Point2D<int>> neihgs;
-    neihgs.push_back(pos);
-    if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x+1, pos._y)))
-      neihgs.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
-    if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x-1, pos._y)))
-      neihgs.push_back(Engine::Point2D<int> (pos._x-1, pos._y));
-    if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x, pos._y+1)))
-      neihgs.push_back(Engine::Point2D<int> (pos._x, pos._y+1));
-    if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x, pos._y-1)))
-      neihgs.push_back(Engine::Point2D<int> (pos._x, pos._y-1));
-
-    for(auto p: neihgs) {
-  		  this->_L_spr_coeff.push_back(Tf(
-					  _ij2val(pos),           //Row is the number of the agent
-					  _ij2val(p), //Col is the timestep
-					  1.0/neihgs.size()
-					  )
-        );
+        for(auto neighbour:neighbours) {
+            this->_L_spr_coeff.push_back(Tf(
+                            _ij2val(pos),       //Row is the number of the agent
+                            _ij2val(neighbour), //Col is the timestep
+                            1.0/neighbours.size()));
+        }
     }
-  }
-
-
 }
 
+// Convert i,j coordinates in a single scalar so we can put into a Eigen3 Sparse matrix
 int RandomWorld::_ij2val(Engine::Point2D<int> pos) {
-/*
- * Convert i,j coordinates in a single scalar so we can put into a Eigen3 Sparse matrix
-*/
     Engine::Size<int> s = this->getConfig().getSize();
     return pos._x*s._width + pos._y; //_height
 }
@@ -113,52 +108,48 @@ float RandomWorld::L(int a, int b) {
     return 0.5;
   }
 
-int RandomWorld::chooseRandom(std::vector<float> probs) {
- 
- float dice = ( (rand() % 100) / 100.0 );
- std::cout << "\tDice is " << dice << std::endl;  
+int RandomWorld::chooseRandom(std::vector<float> transitions) {
+    float dice = ( (rand() % 100) / 100.0 );
 
- for(int i=0; i< probs.size(); i++) {
-    std::cout << "\t\tProb is " << probs[i] << std::endl;  
-    dice -= probs[i];
-   std::cout << "\t\t Now Dice is " << dice << std::endl;  
-    if (dice < 0)
-        return i;
-   }
+    for(int i=0; i< transitions.size(); i++) 
+    {
+        dice -= transitions[i];
+        if (dice < 0)
+            return i;
+    }
 
-  return 0;
+    return 0;
 }
 
 Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
 {
-  std::vector<Engine::Point2D<int>> poss;
-  std::vector<float> probs;
-  // Get neighs
-  Engine::Point2D<int> pos = a.getPosition();
-  std::cout << "I'm agent " << a.getId() << " at pos " << pos << std::endl;
-  poss.push_back(pos);
-  poss.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
-  poss.push_back(Engine::Point2D<int> (pos._x-1, pos._y)); 
-  poss.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); 
-  poss.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
+    Engine::Point2D<int> pos = a.getPosition();
+    std::vector<Engine::Point2D<int>> neighbours;
+    std::vector<float> transitionProbabilities;
+    
+    // Get neighbours
+    neighbours.push_back(pos);
+    neighbours.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
+    neighbours.push_back(Engine::Point2D<int> (pos._x-1, pos._y)); 
+    neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); 
+    neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
 
-  for(auto p: poss) {
-    std::cout << "\tI have a neigh at " << p << std::endl;
-    if (this->getBoundaries().contains(p)) {
-      float _tp = L(this->_ij2val(pos),this->_ij2val(p));
-      std::cout << "\tProb is " << _tp << std::endl;
-      probs.push_back(_tp);
-      }
-  }
-  
-  int index = chooseRandom(probs);
-  std::cout << "\tNew pos is at " << index << " - " << poss.at(index) << std::endl;
-/*  if (index > 1) {
-    throw std::invalid_argument( "received negative value" );
-  }
-*/
-  return poss.at(index);
-
+    // for each of the possible target cells
+    for(auto targetCell : neighbours) 
+    {
+        // check if it's a legal action
+        if (this->getBoundaries().contains(targetCell)) 
+        {
+            // get transition probability P(x_{t+1}|x_t)
+            float _tp = L(this->_ij2val(pos), this->_ij2val(targetCell));
+            transitionProbabilities.push_back(_tp);
+        }
+    }
+    
+    // stochastically choose an action depending on the transition probabilities
+    int index = chooseRandom(transitionProbabilities);
+    //std::cout << "\tNew position for agent " << a.getId() << " that is in " << pos <<  " is " << neighbours.at(index) << std::endl;
+    return neighbours.at(index);
 }
 
 void RandomWorld::createAgents()
