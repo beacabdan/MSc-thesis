@@ -9,6 +9,7 @@
 
 typedef Eigen::SparseMatrix<float> SparseMatrixType; // declares a column-major sparse matrix type of float
 typedef Eigen::Triplet<int> T;
+typedef Eigen::Triplet<float> Tf;
 
 namespace Examples 
 {
@@ -29,7 +30,7 @@ public:
 
   std::vector<T> _pos_spr_coeff;
   std::vector<T> _rwd_spr_coeff;
-  std::vector<T> _L_spr_coeff;
+  std::vector<Tf> _L_spr_coeff;
 
 	Engine::Point2D<int> getAction(Engine::Agent &); 
 	RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);

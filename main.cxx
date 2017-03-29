@@ -8,7 +8,7 @@
 #include <iostream>
 #include <cstdlib>
 
-Eigen::IOFormat OctaveFmt(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");  
+Eigen::IOFormat OctaveFmt(3, 0, ", ", ";\n", "", "", "[", "]");
 
 int calculatePstar(std::vector<SparseMatrixType> states_rolls, std::vector<SparseMatrixType> reward_rolls, bool debug) 
 {
@@ -72,11 +72,13 @@ int main(int argc, char *argv[])
 				
 				world.initialize(argc, argv);
         world.initL();
+
+        for(auto t: world._L_spr_coeff) {
+            std::cout << "\t *" << t.row() << ", " << t.col() << ", " << t.value();
+        }
         SparseMatrixType L(25, 25);
 				L.setFromTriplets(world._L_spr_coeff.begin(), world._L_spr_coeff.end());
-        std::cout << "* L: "  << std::endl; std::cout << Eigen::MatrixXd(L) << std::endl;
-        std::string t;
-        std::cin >> t;
+        std::cout << "* L: "  << std::endl; std::cout << Eigen::MatrixXf(L).format(OctaveFmt) << std::endl;
 
 				world.run();
 

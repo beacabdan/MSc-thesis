@@ -33,13 +33,13 @@ void RandomWorld::initL(){
     if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x, pos._y-1)))
       neihgs.push_back(Engine::Point2D<int> (pos._x, pos._y-1));
 
-
     for(auto p: neihgs) {
-  		  this->_L_spr_coeff.push_back(T(
+  		  this->_L_spr_coeff.push_back(Tf(
 					  _ij2val(pos),           //Row is the number of the agent
 					  _ij2val(p), //Col is the timestep
-					  1.0/((float)neihgs.size())
-					  ));
+					  1.0/neihgs.size()
+					  )
+        );
     }
   }
 
