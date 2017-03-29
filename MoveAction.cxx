@@ -22,10 +22,10 @@ void MoveAction::execute( Engine::Agent & agent )
 	Engine::World * world = agent.getWorld();
 	Examples::RandomWorld * ranworld = (Examples::RandomWorld *) agent.getWorld();
 
-	Engine::Point2D<int> newPosition = agent.getPosition();
+	//Engine::Point2D<int> newPosition = agent.getPosition();
 
-	int action = ranworld->getAction();
-	
+  Engine::Point2D<int> newPosition = ranworld->getAction(agent);
+	/*
 	if (action == 0)
 	{
 		newPosition._x += 1;
@@ -42,7 +42,7 @@ void MoveAction::execute( Engine::Agent & agent )
 	{
 		newPosition._x -= 1;
 	}
-
+*/
 	if(world->checkPosition(newPosition))
 	{
 		agent.setPosition(newPosition);

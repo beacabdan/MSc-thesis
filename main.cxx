@@ -8,11 +8,12 @@
 #include <iostream>
 #include <cstdlib>
 
+Eigen::IOFormat OctaveFmt(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");  
+
 int calculatePstar(std::vector<SparseMatrixType> states_rolls, std::vector<SparseMatrixType> reward_rolls, bool debug) 
 {
 	if (debug) 
 	{
-		Eigen::IOFormat OctaveFmt(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");  
 		  
 		for(std::vector<SparseMatrixType>::size_type i = 0; i != states_rolls.size(); i++) 
 		{
@@ -65,10 +66,18 @@ int main(int argc, char *argv[])
 			// Execute tau rollouts
 			for(int tau=0; tau<maxRolls; tau++) 
 			{
+
 				Examples::RandomWorld world(new Examples::RandomWorldConfig(fileName), world.useOpenMPSingleNode());
 				//Examples::RandomWorld world(new Examples::RandomWorldConfig(fileName), world.useSpacePartition(2));
 				
 				world.initialize(argc, argv);
+        world.initL();
+        SparseMatrixType L(25, 25);
+				L.setFromTriplets(world._L_spr_coeff.begin(), world._L_spr_coeff.end());
+        std::cout << "* L: "  << std::endl; std::cout << Eigen::MatrixXd(L) << std::endl;
+        std::string t;
+        std::cin >> t;
+
 				world.run();
 
 				SparseMatrixType states(maxAgents,maxSteps);
@@ -78,6 +87,7 @@ int main(int argc, char *argv[])
 				SparseMatrixType rewards(maxAgents,maxSteps);
 				rewards.setFromTriplets(world._rwd_spr_coeff.begin(), world._rwd_spr_coeff.end());
 				reward_rolls.push_back(rewards);
+
 			}
 			
 			// Calculate p* for each trajectory

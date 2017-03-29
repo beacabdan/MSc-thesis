@@ -21,17 +21,21 @@ class RandomWorld : public Engine::World
   int _reward(Engine::Point2D<int>);
 	void createRasters();
 	void createAgents();
+  float L(int, int);
+  int chooseRandom(std::vector<float>);
 
   
 public:	
 
   std::vector<T> _pos_spr_coeff;
   std::vector<T> _rwd_spr_coeff;
+  std::vector<T> _L_spr_coeff;
 
-	int getAction(); 
+	Engine::Point2D<int> getAction(Engine::Agent &); 
 	RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);
 	virtual ~RandomWorld();
   virtual void step();
+  void initL();
 
 
 };

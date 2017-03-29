@@ -6,6 +6,7 @@
 #include <DynamicRaster.hxx>
 #include <GeneralState.hxx>
 #include <Logger.hxx>
+#include <stdexcept>
 
 namespace Examples 
 {
@@ -16,6 +17,33 @@ RandomWorld::RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler 
 
 RandomWorld::~RandomWorld()
 {
+}
+
+void RandomWorld::initL(){
+
+  for(auto pos:getBoundaries()) {
+    std::vector<Engine::Point2D<int>> neihgs;
+    neihgs.push_back(pos);
+    if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x+1, pos._y)))
+      neihgs.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
+    if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x-1, pos._y)))
+      neihgs.push_back(Engine::Point2D<int> (pos._x-1, pos._y));
+    if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x, pos._y+1)))
+      neihgs.push_back(Engine::Point2D<int> (pos._x, pos._y+1));
+    if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x, pos._y-1)))
+      neihgs.push_back(Engine::Point2D<int> (pos._x, pos._y-1));
+
+
+    for(auto p: neihgs) {
+  		  this->_L_spr_coeff.push_back(T(
+					  _ij2val(pos),           //Row is the number of the agent
+					  _ij2val(p), //Col is the timestep
+					  1.0/((float)neihgs.size())
+					  ));
+    }
+  }
+
+
 }
 
 int RandomWorld::_ij2val(Engine::Point2D<int> pos) {
@@ -81,9 +109,56 @@ void RandomWorld::createRasters()
 	updateRasterToMaxValues("resourcesStart");
 }
 
-int RandomWorld::getAction()
+float RandomWorld::L(int a, int b) {
+    return 0.5;
+  }
+
+int RandomWorld::chooseRandom(std::vector<float> probs) {
+ 
+ float dice = ( (rand() % 100) / 100.0 );
+ std::cout << "\tDice is " << dice << std::endl;  
+
+ for(int i=0; i< probs.size(); i++) {
+    std::cout << "\t\tProb is " << probs[i] << std::endl;  
+    dice -= probs[i];
+   std::cout << "\t\t Now Dice is " << dice << std::endl;  
+    if (dice < 0)
+        return i;
+   }
+
+  return 0;
+}
+
+Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
 {
-	return (int)std::rand()%5;
+  std::vector<Engine::Point2D<int>> poss;
+  std::vector<float> probs;
+  // Get neighs
+  Engine::Point2D<int> pos = a.getPosition();
+  std::cout << "I'm agent " << a.getId() << " at pos " << pos << std::endl;
+  poss.push_back(pos);
+  poss.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
+  poss.push_back(Engine::Point2D<int> (pos._x-1, pos._y)); 
+  poss.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); 
+  poss.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
+
+  for(auto p: poss) {
+    std::cout << "\tI have a neigh at " << p << std::endl;
+    if (this->getBoundaries().contains(p)) {
+      float _tp = L(this->_ij2val(pos),this->_ij2val(p));
+      std::cout << "\tProb is " << _tp << std::endl;
+      probs.push_back(_tp);
+      }
+  }
+  
+  int index = chooseRandom(probs);
+  std::cout << "\tNew pos is at " << index << " - " << poss.at(index) << std::endl;
+/*  if (index > 1) {
+    throw std::invalid_argument( "received negative value" );
+  }
+*/
+  return poss.at(index);
+
 }
 
 void RandomWorld::createAgents()
