@@ -29,12 +29,14 @@ public:
     std::vector<T> _pos_spr_coeff;
     std::vector<T> _rwd_spr_coeff;
     std::vector<Tf> _L_spr_coeff;
+    std::vector<Engine::Point2D<int>> basisCenters;
 
     Engine::Point2D<int> getAction(Engine::Agent &); 
     RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);
     virtual ~RandomWorld();
     virtual void step();
     void initL();
+    void initBasis();
 	
 };
 

@@ -43,6 +43,36 @@ void RandomWorld::initL()
     }
 }
 
+void RandomWorld::initBasis()
+{
+    const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
+    
+    int width = getBoundaries()._size._width;
+    int height = getBoundaries()._size._height;
+    int numBasis = randomConfig._numBasis;
+    
+    int leftMargin = width % numBasis;
+    int topMargin = height % numBasis;
+    int xGap = (width - leftMargin) / numBasis;
+    int yGap = (height - topMargin) / numBasis;
+    leftMargin = (leftMargin + leftMargin % 2) / 2;
+    topMargin = (topMargin + topMargin % 2) / 2;
+    
+    for(auto index:getBoundaries())
+    {
+        int x = index._x;
+        int y = index._y;
+        
+        if ((x + 1 - leftMargin - (xGap + xGap % 2) / 2) % xGap == 0 && x + 1 - leftMargin - (xGap + xGap % 2) / 2 >= 0 && x < width - (width % numBasis) / 2 &&
+            (y + 1 - topMargin - (yGap + yGap % 2) / 2) % yGap == 0 && y + 1 - topMargin - (yGap + yGap % 2) / 2 >= 0 && y < height - (height % numBasis) / 2)
+        {
+            setMaxValue("centerRBF", index, 5);
+            setValue("centerRBF", index, 5);
+            basisCenters.push_back(index);
+        }
+    }
+}
+
 // Convert i,j coordinates in a single scalar so we can put into a Eigen3 Sparse matrix
 int RandomWorld::_ij2val(Engine::Point2D<int> pos) {
     Engine::Size<int> s = this->getConfig().getSize();
@@ -58,9 +88,9 @@ int RandomWorld::_reward(Engine::Point2D<int> pos)
 
 void RandomWorld::step()
 {
-  //Step the world 
-  World::step();
-  //Save trajectory information
+    //Step the world 
+    World::step();
+    //Save trajectory information
 	for(auto it=this->beginAgents(); it!=this->endAgents(); it++)
 	{
 		if(!(*it)->exists())
@@ -88,24 +118,30 @@ void RandomWorld::createRasters()
 {
 	const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
 	
-	registerDynamicRaster("resources", true);
-	registerDynamicRaster("resourcesStart", true);
-	getDynamicRaster("resources").setInitValues(0, 5, 0);
+	registerDynamicRaster("cost", true);
+	getDynamicRaster("cost").setInitValues(0, 5, 0);
+    
+    registerDynamicRaster("resourcesStart", true);
 	getDynamicRaster("resourcesStart").setInitValues(0, 5, 0);
+    
+    registerDynamicRaster("centerRBF", true);
+    getDynamicRaster("centerRBF").setInitValues(0, 5, 0);
 
 	for(auto index:getBoundaries())
 	{
-		setMaxValue("resources", index, 0);
+        setMaxValue("cost", index, 0);
 		if (index.distance(Engine::Point2D<int>(randomConfig._rewardPosX, randomConfig._rewardPosY)) < randomConfig._rewardAreaSize)
-			setMaxValue("resources", index, 1);
+			setMaxValue("cost", index, 1);
+        setMaxValue("centerRBF", index, 0);
 	}
 	
-	updateRasterToMaxValues("resources");
-	updateRasterToMaxValues("resourcesStart");
+	updateRasterToMaxValues("cost");
+    updateRasterToMaxValues("resourcesStart");
+    updateRasterToMaxValues("centerRBF");
 }
 
 float RandomWorld::L(int a, int b) {
-    return 0.5;
+    return 0.3;
   }
 
 int RandomWorld::chooseRandom(std::vector<float> transitions) {

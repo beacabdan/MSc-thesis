@@ -24,25 +24,7 @@ void MoveAction::execute( Engine::Agent & agent )
 
 	//Engine::Point2D<int> newPosition = agent.getPosition();
 
-  Engine::Point2D<int> newPosition = ranworld->getAction(agent);
-	/*
-	if (action == 0)
-	{
-		newPosition._x += 1;
-	}
-	else if (action == 1)
-	{
-		newPosition._y += 1;
-	}
-	else if (action == 2)
-	{
-		newPosition._y -= 1;
-	}
-	else if (action == 3)
-	{
-		newPosition._x -= 1;
-	}
-*/
+    Engine::Point2D<int> newPosition = ranworld->getAction(agent);
 	if(world->checkPosition(newPosition))
 	{
 		agent.setPosition(newPosition);

@@ -32,8 +32,8 @@ int calculatePstar(std::vector<SparseMatrixType> states_rolls, std::vector<Spars
         {
             //TODO: WARNING!!! We loose sparsity here to print!!!!
             std::cout << "\033[1;34m\n" << "Roll " << i << "\033[0m" << std::endl;
-            printIntMatrix(states_rolls[i], "States");
-            printIntMatrix(reward_rolls[i], "Rewards");
+            //printIntMatrix(states_rolls[i], "State");
+            //printIntMatrix(reward_rolls[i], "Reward");
         }
     }
 }
@@ -83,8 +83,9 @@ int main(int argc, char *argv[])
 
                 world.initialize(argc, argv);
                 world.initL();
+                world.initBasis();
                 int gridSize = world.getBoundaries()._size._width*world.getBoundaries()._size._height;
-                printFloatMatrix(world._L_spr_coeff, gridSize, gridSize, "L");
+                //printFloatMatrix(world._L_spr_coeff, gridSize, gridSize, "L");
                 world.run();
 
                 SparseMatrixType states(maxAgents,maxSteps);
