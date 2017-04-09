@@ -75,7 +75,6 @@ int main(int argc, char *argv[])
             
             std::vector<SparseMatrixType> state_rolls;
             std::vector<SparseMatrixType> reward_rolls;
-            std::vector<SparseMatrixType> phi_rolls;
 
             // Execute tau rollouts
             for(int tau=0; tau<maxRolls; tau++) 

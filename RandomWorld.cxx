@@ -96,6 +96,7 @@ void RandomWorld::step()
     int maxAgents = randomConfig._numAgents; 
     int numBasis = randomConfig._numBasis; 
     
+    //phi_t matrix <- how much agent m activates basis b
     std::vector<Tf> basisActivation;    
     
     //Save trajectory information
@@ -120,18 +121,17 @@ void RandomWorld::step()
 						 a->getPosition()         //Val is the position, converted to a scalar
 					  )));
         
-        int baseCounter = 0;
-        for(auto base:basisCenters)
+        int basisCounter = 0;
+        for(auto basis:basisCenters)
         {
-            if (base.distance(a->getPosition()) < 2)
+            if (basis.distance(a->getPosition()) < 2)
             {
-                //std::cout << "agent " << a->getId() << " at position " << a->getPosition() << " is close to base " << baseCounter << " at " << base << std::endl;
                 basisActivation.push_back(Tf(
 					  stoi(a->getId()),             //Row is the number of the agent
-					  baseCounter,                  //Col is the basis
-					  1.0));
+					  basisCounter,                 //Col is the basis
+					  1.0));                        //TODO: this float must encode the distance to the center of the gaussian
             }
-            baseCounter++;
+            basisCounter++;
         }
     }
     
@@ -212,7 +212,6 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     
     // stochastically choose an action depending on the transition probabilities
     int index = chooseRandom(transitionProbabilities);
-    //std::cout << "\tNew position for agent " << a.getId() << " that is in " << pos <<  " is " << neighbours.at(index) << std::endl;
     return neighbours.at(index);
 }
 
