@@ -4,5 +4,11 @@ data/*
 logs/*
 *~
 *dblite
-build*/
 bin/*
+build*/cmake*
+build*/CMake*
+build*/Make*
+build*/data/
+build*/logs/
+build*/mpiCode/
+build*/rand*

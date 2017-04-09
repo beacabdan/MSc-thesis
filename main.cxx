@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         Examples::RandomWorldConfig * randomConfig =  new Examples::RandomWorldConfig(fileName);
 
         randomConfig->loadFile();
-        int maxAgents = randomConfig->_numAgents; 
+        int maxAgents = randomConfig->_numAgents;
         int maxSteps = randomConfig->getNumSteps();
         std::cout << "Creating matrices of (" << maxAgents << "x" << maxSteps << ")" << std::endl; 
 
@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
             
             std::vector<SparseMatrixType> state_rolls;
             std::vector<SparseMatrixType> reward_rolls;
+            std::vector<SparseMatrixType> phi_rolls;
 
             // Execute tau rollouts
             for(int tau=0; tau<maxRolls; tau++) 

@@ -30,6 +30,7 @@ public:
     std::vector<T> _rwd_spr_coeff;
     std::vector<Tf> _L_spr_coeff;
     std::vector<Engine::Point2D<int>> basisCenters;
+    //std::vector<Tf> basisActivation;
 
     Engine::Point2D<int> getAction(Engine::Agent &); 
     RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);

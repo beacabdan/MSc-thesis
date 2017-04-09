@@ -90,6 +90,14 @@ void RandomWorld::step()
 {
     //Step the world 
     World::step();
+    
+    //get config
+    const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
+    int maxAgents = randomConfig._numAgents; 
+    int numBasis = randomConfig._numBasis; 
+    
+    std::vector<Tf> basisActivation;    
+    
     //Save trajectory information
 	for(auto it=this->beginAgents(); it!=this->endAgents(); it++)
 	{
@@ -111,7 +119,27 @@ void RandomWorld::step()
 					  this->_reward(
 						 a->getPosition()         //Val is the position, converted to a scalar
 					  )));
-	}
+        
+        int baseCounter = 0;
+        for(auto base:basisCenters)
+        {
+            if (base.distance(a->getPosition()) < 2)
+            {
+                //std::cout << "agent " << a->getId() << " at position " << a->getPosition() << " is close to base " << baseCounter << " at " << base << std::endl;
+                basisActivation.push_back(Tf(
+					  stoi(a->getId()),             //Row is the number of the agent
+					  baseCounter,                  //Col is the basis
+					  1.0));
+            }
+            baseCounter++;
+        }
+    }
+    
+    SparseMatrixType sparseM(maxAgents, numBasis*numBasis);
+    sparseM.setFromTriplets(basisActivation.begin(), basisActivation.end());
+    std::cout << "\033[1;35m\n" << "Phi_{t=" << getCurrentTimeStep() << "}:" << "\033[0m" << std::endl;
+    Eigen::IOFormat OctaveFmt(3, 0, ", ", ";\n", "", "", "[", "]");
+    std::cout << Eigen::MatrixXf(sparseM).format(OctaveFmt) << std::endl;
 }
 
 void RandomWorld::createRasters()
