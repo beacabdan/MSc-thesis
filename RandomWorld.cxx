@@ -86,6 +86,10 @@ int RandomWorld::_reward(Engine::Point2D<int> pos)
     return -1;
 }
 
+double activation(int x, int mean_x, double sigma) {
+    return 1 / std::sqrt(2 * M_PI * sigma * sigma) * std::exp(-0.5 * (x-mean_x) * (x-mean_x) / (sigma * sigma) );
+}
+
 void RandomWorld::step()
 {
     //Step the world 
@@ -124,13 +128,10 @@ void RandomWorld::step()
         int basisCounter = 0;
         for(auto basis:basisCenters)
         {
-            if (basis.distance(a->getPosition()) < 2)
-            {
-                basisActivation.push_back(Tf(
-					  stoi(a->getId()),             //Row is the number of the agent
-					  basisCounter,                 //Col is the basis
-					  1.0));                        //TODO: this float must encode the distance to the center of the gaussian
-            }
+            basisActivation.push_back(Tf(
+                  stoi(a->getId()),             //Row is the number of the agent
+                  basisCounter,                 //Col is the basis
+                  activation(basis._x, a->getPosition()._x, 0.5)*activation(basis._y, a->getPosition()._y, 0.5)));
             basisCounter++;
         }
     }
