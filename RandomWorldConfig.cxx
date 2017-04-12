@@ -19,6 +19,7 @@ void RandomWorldConfig::loadParams()
 	_rewardPosY = getParamInt( "reward", "ypos");
 	_rewardAreaSize = getParamInt( "reward", "size");
     _numBasis = getParamInt( "numBasis", "value");
+    _basisSigma = getParamFloat( "numBasis", "sigma");
 }
 	
 } // namespace Examples

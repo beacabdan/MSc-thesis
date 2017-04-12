@@ -16,6 +16,7 @@ public:
 	int _rewardPosY;
 	int _rewardAreaSize;
     int _numBasis;
+    float _basisSigma;
 
 	RandomWorldConfig( const std::string & xmlFile );
 	virtual ~RandomWorldConfig();

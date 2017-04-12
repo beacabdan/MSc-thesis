@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
         randomConfig->loadFile();
         int maxAgents = randomConfig->_numAgents;
         int maxSteps = randomConfig->getNumSteps();
+        int numBasis = randomConfig->_numBasis;
         std::cout << "Creating matrices of (" << maxAgents << "x" << maxSteps << ")" << std::endl; 
 
         for(int i=0; i<maxIt; i++) 
@@ -85,8 +86,16 @@ int main(int argc, char *argv[])
                 world.initL();
                 world.initBasis();
                 int gridSize = world.getBoundaries()._size._width*world.getBoundaries()._size._height;
-                //printFloatMatrix(world._L_spr_coeff, gridSize, gridSize, "L");
                 world.run();
+                
+                //WARNING: prints up to 3 decimals but _phi contains floats
+                std::cout << "\033[1;35m\n" << "Phi matrix:" << "\033[0m" << std::endl;
+                for(size_t i = 0; i < world.getCurrentTimeStep(); i++)
+                {
+                    for(size_t j = 0; j < numBasis*numBasis; j++)
+                        std::cout << (int)(world._phi[i][j]*1000)/1000.0 << "\t";
+                    std::cout << std::endl;
+                }
 
                 SparseMatrixType states(maxAgents,maxSteps);
                 states.setFromTriplets(world._pos_spr_coeff.begin(), world._pos_spr_coeff.end());
