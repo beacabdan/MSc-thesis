@@ -19,27 +19,30 @@ RandomWorld::~RandomWorld()
 {
 }
 
-void RandomWorld::initL()
+void RandomWorld::initQ()
 {
+    //for all 2D pos in the world
     for(auto pos:getBoundaries())
     {
         std::vector<Engine::Point2D<int>> neighbours;
-        neighbours.push_back(pos);
+        
+        neighbours.push_back(pos); //stop
         if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x+1, pos._y)))
-            neighbours.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
+            neighbours.push_back(Engine::Point2D<int> (pos._x+1, pos._y)); //east
         if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x-1, pos._y)))
-            neighbours.push_back(Engine::Point2D<int> (pos._x-1, pos._y));
+            neighbours.push_back(Engine::Point2D<int> (pos._x-1, pos._y)); //west
         if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x, pos._y+1)))
-            neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1));
+            neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); //south
         if (this->getBoundaries().contains(Engine::Point2D<int> (pos._x, pos._y-1)))
-            neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));
+            neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1)); //north
 
-        for(auto neighbour:neighbours) {
+        //store [pos, pos', p(pos'|pos)] for all legal pos'
+        for(auto neighbour:neighbours)
             this->_L_spr_coeff.push_back(Tf(
-                            _ij2val(pos),       //Row is the number of the agent
-                            _ij2val(neighbour), //Col is the timestep
-                            1.0/neighbours.size()));
-        }
+                _ij2val(pos),
+                _ij2val(neighbour),
+                1.0/neighbours.size()
+                ));
     }
 }
 
@@ -92,47 +95,49 @@ double activation(int x, int mean_x, double sigma) {
 
 void RandomWorld::step()
 {
-    //Step the world 
+    //step the world 
     World::step();
     
-    //get config
+    //get needed values from the config.xml file
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
     int maxAgents = randomConfig._numAgents; 
     const int numBasis = randomConfig._numBasis; 
     float sigma = randomConfig._basisSigma; 
     
-    //phi_t matrix <- how much agents activate basis b
+    //phi matrix how much agents activate basis b at every timestep
     std::vector<float> basisActivation(numBasis*numBasis);
     
-    //Save trajectory information
+    //for each agent
 	for(auto it=this->beginAgents(); it!=this->endAgents(); it++)
 	{
-		if(!(*it)->exists())
-		{
-			continue;
-		}
+        //get current agent
+		if(!(*it)->exists()) continue;
 		Engine::Agent * a = (Engine::Agent *) it->get();
+        
+        //store [agent, timestep, position]
 		this->_pos_spr_coeff.push_back(T(
-					  stoi(a->getId()),           //Row is the number of the agent
-					  this->getCurrentTimeStep(), //Col is the timestep
-					  this->_ij2val(
-						 a->getPosition()         //Val is the position, converted to a scalar
-					  )));
+            stoi(a->getId()),
+            this->getCurrentTimeStep(),
+            this->_ij2val(a->getPosition())
+            ));
 
-		this->_rwd_spr_coeff.push_back(T(
-					  stoi(a->getId()),           //Row is the number of the agent
-					  this->getCurrentTimeStep(), //Col is the timestep
-					  this->_reward(
-						 a->getPosition()         //Val is the position, converted to a scalar
-					  )));
+        //store [agent, timestep, cost]
+		this->_rwd_spr_coeff.push_back(T( 
+            stoi(a->getId()), 
+            this->getCurrentTimeStep(), 
+            this->_reward(a->getPosition()) 
+            ));
         
         int basisCounter = 0;
         for(auto basis:basisCenters)
         {
+            //sum over the agents of the activation for each basis
             basisActivation[basisCounter] += activation(basis._x, a->getPosition()._x, sigma)*activation(basis._y, a->getPosition()._y, sigma);
             basisCounter++;
         }
     }
+    
+    //store [timestep, basis, activation]
     _phi.push_back(basisActivation);
 }
 
@@ -140,12 +145,11 @@ void RandomWorld::createRasters()
 {
 	const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
 	
+    //to represent the "goal areas"
 	registerDynamicRaster("cost", true);
 	getDynamicRaster("cost").setInitValues(0, 5, 0);
-    
-    registerDynamicRaster("resourcesStart", true);
-	getDynamicRaster("resourcesStart").setInitValues(0, 5, 0);
-    
+
+    //to visualize the center of the RBFs in cassandra
     registerDynamicRaster("centerRBF", true);
     getDynamicRaster("centerRBF").setInitValues(0, 5, 0);
 
@@ -158,7 +162,6 @@ void RandomWorld::createRasters()
 	}
 	
 	updateRasterToMaxValues("cost");
-    updateRasterToMaxValues("resourcesStart");
     updateRasterToMaxValues("centerRBF");
 }
 

@@ -24,18 +24,9 @@ void printIntMatrix(SparseMatrixType matrix, std::string name="M")
     std::cout << Eigen::MatrixXf(matrix).format(OctaveFmt) << std::endl;
 }
 
-int calculatePstar(std::vector<SparseMatrixType> states_rolls, std::vector<SparseMatrixType> reward_rolls, bool debug) 
+int calculatePtheta(std::vector<SparseMatrixType> states_rolls, std::vector<SparseMatrixType> reward_rolls, bool debug) 
 {
-    if (debug) 
-    {
-        for(std::vector<SparseMatrixType>::size_type i = 0; i != states_rolls.size(); i++) 
-        {
-            //TODO: WARNING!!! We loose sparsity here to print!!!!
-            std::cout << "\033[1;34m\n" << "Roll " << i << "\033[0m" << std::endl;
-            //printIntMatrix(states_rolls[i], "State");
-            //printIntMatrix(reward_rolls[i], "Reward");
-        }
-    }
+    std::cout << "Updating p_theta" << std::endl;
 }
 
 int updatePolicy(int pstar, int state) 
@@ -68,7 +59,6 @@ int main(int argc, char *argv[])
         int maxAgents = randomConfig->_numAgents;
         int maxSteps = randomConfig->getNumSteps();
         int numBasis = randomConfig->_numBasis;
-        std::cout << "Creating matrices of (" << maxAgents << "x" << maxSteps << ")" << std::endl; 
 
         for(int i=0; i<maxIt; i++) 
         {
@@ -80,14 +70,22 @@ int main(int argc, char *argv[])
             // Execute tau rollouts
             for(int tau=0; tau<maxRolls; tau++) 
             {
+                std::cout << "\033[1;34m\n" << "ROLL " << i << "\033[0m" << std::endl;
                 Examples::RandomWorld world(new Examples::RandomWorldConfig(fileName), world.useOpenMPSingleNode());
 
                 world.initialize(argc, argv);
-                world.initL();
-                world.initBasis();
-                int gridSize = world.getBoundaries()._size._width*world.getBoundaries()._size._height;
+                world.initQ();      //uncontrolled dynamics
+                world.initBasis();  //center of RBF
                 world.run();
+              
+                SparseMatrixType states(maxAgents,maxSteps);
+                states.setFromTriplets(world._pos_spr_coeff.begin(), world._pos_spr_coeff.end());
+                state_rolls.push_back(states);
                 
+                SparseMatrixType rewards(maxAgents,maxSteps);
+                rewards.setFromTriplets(world._rwd_spr_coeff.begin(), world._rwd_spr_coeff.end());
+                reward_rolls.push_back(rewards);
+
                 //WARNING: prints up to 3 decimals but _phi contains floats
                 std::cout << "\033[1;35m\n" << "Phi matrix:" << "\033[0m" << std::endl;
                 for(size_t i = 0; i < world.getCurrentTimeStep(); i++)
@@ -96,21 +94,15 @@ int main(int argc, char *argv[])
                         std::cout << (int)(world._phi[i][j]*1000)/1000.0 << "\t";
                     std::cout << std::endl;
                 }
-
-                SparseMatrixType states(maxAgents,maxSteps);
-                states.setFromTriplets(world._pos_spr_coeff.begin(), world._pos_spr_coeff.end());
-                state_rolls.push_back(states);
-
-                SparseMatrixType rewards(maxAgents,maxSteps);
-                rewards.setFromTriplets(world._rwd_spr_coeff.begin(), world._rwd_spr_coeff.end());
-                reward_rolls.push_back(rewards);
+                
+                printIntMatrix(states, "State");                
+                printIntMatrix(rewards, "Reward");
             }
 
-            // Calculate p* for each trajectory
-            int pstar = calculatePstar(state_rolls, reward_rolls, true);
-
-            // Update policy
-            updatePolicy(pstar, i);
+            //compute Z_theta (normalization term)
+            //compute p_theta
+            //update omega weights for current rollout
+            //update Theta_{t+1}
         }
     }
     catch( std::exception & exceptionThrown )

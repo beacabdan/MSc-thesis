@@ -19,18 +19,12 @@ MoveAction::~MoveAction()
 
 void MoveAction::execute( Engine::Agent & agent )
 {	
-	Engine::World * world = agent.getWorld();
+    //ask the world where to move to
 	Examples::RandomWorld * ranworld = (Examples::RandomWorld *) agent.getWorld();
-
-	//Engine::Point2D<int> newPosition = agent.getPosition();
-
     Engine::Point2D<int> newPosition = ranworld->getAction(agent);
-	if(world->checkPosition(newPosition))
-	{
-		agent.setPosition(newPosition);
-	}
-
-	world->setValue("resourcesStart", agent.getPosition(), 0);
+	
+    //if legal position, move agent
+    if(ranworld->checkPosition(newPosition)) agent.setPosition(newPosition);
 }
 
 std::string MoveAction::describe() const
@@ -38,5 +32,5 @@ std::string MoveAction::describe() const
 	return "MoveAction";
 }
 
-} // namespace Examples
+}
 

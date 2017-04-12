@@ -36,7 +36,7 @@ public:
     RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);
     virtual ~RandomWorld();
     virtual void step();
-    void initL();
+    void initQ();
     void initBasis();
 	
 };
