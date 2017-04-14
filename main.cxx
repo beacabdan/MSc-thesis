@@ -87,16 +87,16 @@ int main(int argc, char *argv[])
                 reward_rolls.push_back(rewards);
 
                 //WARNING: prints up to 3 decimals but _phi contains floats
-                std::cout << "\033[1;35m\n" << "Phi matrix:" << "\033[0m" << std::endl;
-                for(size_t i = 0; i < world.getCurrentTimeStep(); i++)
+                /*std::cout << "\033[1;35m\n" << "Phi matrix:" << "\033[0m" << std::endl;
+                for(size_t j = 0; j < numBasis*numBasis; j++)
                 {
-                    for(size_t j = 0; j < numBasis*numBasis; j++)
+                    for(size_t i = 0; i < world.getCurrentTimeStep(); i++)
                         std::cout << (int)(world._phi[i][j]*1000)/1000.0 << "\t";
                     std::cout << std::endl;
                 }
                 
                 printIntMatrix(states, "State");                
-                printIntMatrix(rewards, "Reward");
+                printIntMatrix(rewards, "Reward");*/
             }
 
             //compute Z_theta (normalization term)

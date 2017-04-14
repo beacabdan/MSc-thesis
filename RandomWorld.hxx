@@ -28,9 +28,10 @@ class RandomWorld : public Engine::World
 public:	
     std::vector<T> _pos_spr_coeff;
     std::vector<T> _rwd_spr_coeff;
-    std::vector<Tf> _L_spr_coeff;
+    std::vector<Tf> _q;
     std::vector<Engine::Point2D<int>> basisCenters;
     std::vector<std::vector<float>> _phi;
+    std::vector<float> theta;
 
     Engine::Point2D<int> getAction(Engine::Agent &); 
     RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);
@@ -38,6 +39,7 @@ public:
     virtual void step();
     void initQ();
     void initBasis();
+    std::vector<float> getPhiOfPos(Engine::Point2D<int>);
 	
 };
 

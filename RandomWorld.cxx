@@ -38,7 +38,7 @@ void RandomWorld::initQ()
 
         //store [pos, pos', p(pos'|pos)] for all legal pos'
         for(auto neighbour:neighbours)
-            this->_L_spr_coeff.push_back(Tf(
+            this->_q.push_back(Tf(
                 _ij2val(pos),
                 _ij2val(neighbour),
                 1.0/neighbours.size()
@@ -96,6 +96,7 @@ double activation(int x, int mean_x, double sigma) {
 void RandomWorld::step()
 {
     //step the world 
+    std::cout << "WORLD::STEP " << getCurrentTimeStep() << std::endl;
     World::step();
     
     //get needed values from the config.xml file
@@ -132,6 +133,7 @@ void RandomWorld::step()
         for(auto basis:basisCenters)
         {
             //sum over the agents of the activation for each basis
+            //WARNING: not used, this is current activation, we are interested in "potential activation" in x'_i
             basisActivation[basisCounter] += activation(basis._x, a->getPosition()._x, sigma)*activation(basis._y, a->getPosition()._y, sigma);
             basisCounter++;
         }
@@ -139,6 +141,26 @@ void RandomWorld::step()
     
     //store [timestep, basis, activation]
     _phi.push_back(basisActivation);
+}
+
+std::vector<float> RandomWorld::getPhiOfPos(Engine::Point2D<int> pos)
+{
+    //get needed values from the config.xml file
+    const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
+    const int numBasis = randomConfig._numBasis; 
+    float sigma = randomConfig._basisSigma; 
+    
+    //vector: for each basis, activation by a single agent / pos
+    std::vector<float> basisActivation(numBasis*numBasis);
+    int basisCounter = 0;
+    for(auto basis:basisCenters)
+    {
+        //sum over the agents of the activation for each basis
+        basisActivation[basisCounter] = activation(basis._x, pos._x, sigma)*activation(basis._y, pos._y, sigma);
+        basisCounter++;
+    }
+    
+    return basisActivation;
 }
 
 void RandomWorld::createRasters()
@@ -169,6 +191,7 @@ float RandomWorld::L(int a, int b) {
     return 0.3;
   }
 
+//returns the index of the action chosen according to p_theta(x'_i|x_i)
 int RandomWorld::chooseRandom(std::vector<float> transitions) {
     float dice = ( (rand() % 100) / 100.0 );
 
@@ -188,6 +211,9 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     std::vector<Engine::Point2D<int>> neighbours;
     std::vector<float> transitionProbabilities;
     
+    //parameters
+    float lambda = 1.0;
+    
     // Get neighbours
     neighbours.push_back(pos);
     neighbours.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
@@ -204,6 +230,11 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             // get transition probability P(x_{t+1}|x_t)
             float _tp = L(this->_ij2val(pos), this->_ij2val(targetCell));
             transitionProbabilities.push_back(_tp);
+
+            // getting phi_k
+            std::vector<float> basisActivation = getPhiOfPos(targetCell);
+            for (auto basis:basisActivation) std::cout << (int)(basis*1000)/1000.0 << "\t";
+            std::cout << std::endl;
         }
     }
     
