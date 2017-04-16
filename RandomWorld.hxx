@@ -40,6 +40,7 @@ public:
     virtual ~RandomWorld();
     virtual void step();
     void initQ();
+    float getQ(Engine::Point2D<int>, Engine::Point2D<int>);
     void initBasis();
     std::vector<float> getPhiOfPos(Engine::Point2D<int>);
 	

@@ -46,6 +46,17 @@ void RandomWorld::initQ()
     }
 }
 
+float RandomWorld::getQ(Engine::Point2D<int> source, Engine::Point2D<int> target)
+{
+    //find uncontrolled probability
+    for (auto q:_q)
+        if (_ij2val(source) == q.row() && _ij2val(target) == q.col())
+            return q.value();
+            
+    //TODO: no need to check if neighbours, if not q(x'_i|x_i) = 0
+    return 0.0;
+}
+
 void RandomWorld::initBasis()
 {
     //get parameters from config.xml file
@@ -215,12 +226,14 @@ int RandomWorld::chooseRandom(std::vector<float> transitions) {
 
 Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
 {
+    const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
     Engine::Point2D<int> pos = a.getPosition();
     std::vector<Engine::Point2D<int>> neighbours;
     std::vector<float> transitionProbabilities;
     
     //parameters
-    float lambda = 1.0;
+    float lambda = randomConfig._lambda; //temperature
+    float Z = 0; //normalization
     
     // Get neighbours
     neighbours.push_back(pos);
@@ -235,17 +248,38 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
         // check if it's a legal action
         if (this->getBoundaries().contains(targetCell)) 
         {
-            // get transition probability P(x_{t+1}|x_t)
-            float _tp = L(this->_ij2val(pos), this->_ij2val(targetCell));
-            transitionProbabilities.push_back(_tp);
-
-            // getting phi_k
+            std::cout << "\033[1;36m" << pos << " -> " << targetCell << "\033[0m" << std::endl;
+            
+            //phi_k
             std::vector<float> phi_stored = _phi.at(_ji2val(targetCell));
+            
             std::cout << "\033[1;35m" << "Phi(" << _val2ij(_ji2val(_val2ij(_ji2val(targetCell)))) << "):\t" << "\033[0m";
             for (auto phi_k:phi_stored) std::cout << (int)(phi_k*1000)/1000.0 << "\t";
             std::cout << std::endl;
+         
+            //psi(x'_i)
+            float psi = 1;            
+            for (auto phi_k:phi_stored)
+                psi *= exp(-(1.0/lambda) * phi_k); //TODO: add theta_k
+            
+            //q(x'_i|x_i)
+            float q = getQ(pos, targetCell);
+            
+            //p_theta(x'_i|x_i)
+            float p_theta = psi * q;            
+            std::cout << "\033[1;35m" << "p_theta(" << targetCell << "|" << pos << "): " << "\033[0m" << p_theta << std::endl << std::endl;
+            
+            transitionProbabilities.push_back(p_theta);
+            Z += p_theta;
         }
     }
+    
+    float sum = 0;
+    for (auto p_theta_x:transitionProbabilities)
+    {
+        p_theta_x /= Z;
+        sum += p_theta_x;
+    }    
     
     // stochastically choose an action depending on the transition probabilities
     int index = chooseRandom(transitionProbabilities);
