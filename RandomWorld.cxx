@@ -129,6 +129,7 @@ void RandomWorld::step()
     //step the world 
     std::cout << "WORLD::STEP " << getCurrentTimeStep() << std::endl;
     World::step();
+    pHat = 1;
     
     //get needed values from the config.xml file
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
@@ -229,7 +230,7 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
     Engine::Point2D<int> pos = a.getPosition();
     std::vector<Engine::Point2D<int>> neighbours;
-    std::vector<float> transitionProbabilities;
+    std::vector<float> p_theta;
     
     //parameters
     float lambda = randomConfig._lambda; //temperature
@@ -248,15 +249,9 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
         // check if it's a legal action
         if (this->getBoundaries().contains(targetCell)) 
         {
-            std::cout << "\033[1;36m" << pos << " -> " << targetCell << "\033[0m" << std::endl;
-            
-            //phi_k
+            //phi(x'_i)
             std::vector<float> phi_stored = _phi.at(_ji2val(targetCell));
-            
-            std::cout << "\033[1;35m" << "Phi(" << _val2ij(_ji2val(_val2ij(_ji2val(targetCell)))) << "):\t" << "\033[0m";
-            for (auto phi_k:phi_stored) std::cout << (int)(phi_k*1000)/1000.0 << "\t";
-            std::cout << std::endl;
-         
+                     
             //psi(x'_i)
             float psi = 1;            
             for (auto phi_k:phi_stored)
@@ -266,23 +261,36 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             float q = getQ(pos, targetCell);
             
             //p_theta(x'_i|x_i)
-            float p_theta = psi * q;            
-            std::cout << "\033[1;35m" << "p_theta(" << targetCell << "|" << pos << "): " << "\033[0m" << p_theta << std::endl << std::endl;
+            float p_theta_x = psi * q;
             
-            transitionProbabilities.push_back(p_theta);
-            Z += p_theta;
+            p_theta.push_back(p_theta_x);
+            Z += p_theta_x;
+        }
+        else 
+        {
+            p_theta.push_back(0.0);
         }
     }
     
     float sum = 0;
-    for (auto p_theta_x:transitionProbabilities)
+    int counter = 0;
+    for(std::vector<float>::size_type i = 0; i != p_theta.size(); i++)
     {
-        p_theta_x /= Z;
-        sum += p_theta_x;
-    }    
+        p_theta.at(i) /= Z;
+        sum += p_theta.at(i);
+        
+        std::cout << "\033[1;35m" << "p_theta(" << neighbours.at(i) << "|" << pos << "): " << "\033[0m" << p_theta.at(i) << std::endl;
+    }
     
     // stochastically choose an action depending on the transition probabilities
-    int index = chooseRandom(transitionProbabilities);
+    int index = chooseRandom(p_theta);
+    
+    //p_hat
+    pHat *= p_theta.at(index);
+    std::cout << "pHat: " << pHat << std::endl;;
+    std::cout << std::endl;
+    
+    //TODO: store which \hat p_theta was used
     return neighbours.at(index);
 }
 

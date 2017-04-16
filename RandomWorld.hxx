@@ -34,6 +34,7 @@ public:
     std::vector<Engine::Point2D<int>> basisCenters;
     std::vector<std::vector<float>> _phi;
     std::vector<float> theta;
+    float pHat;
 
     Engine::Point2D<int> getAction(Engine::Agent &); 
     RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);
