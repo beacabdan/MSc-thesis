@@ -48,12 +48,13 @@ void RandomWorld::initQ()
 
 void RandomWorld::initBasis()
 {
-    const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
-    
+    //get parameters from config.xml file
+    const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();    
     int width = getBoundaries()._size._width;
     int height = getBoundaries()._size._height;
     int numBasis = randomConfig._numBasis;
     
+    //compute positions of basis
     int leftMargin = width % numBasis;
     int topMargin = height % numBasis;
     int xGap = (width - leftMargin) / numBasis;
@@ -74,12 +75,31 @@ void RandomWorld::initBasis()
             basisCenters.push_back(index);
         }
     }
+
+    //initialize theta as theta_k=0 for all k
+    theta = std::vector<float>(numBasis*numBasis);
+
+    //store [x][y][k][phi]
+    for(auto index:getBoundaries())
+    {        
+        _phi.push_back(getPhiOfPos(index));
+    }
 }
 
 // Convert i,j coordinates in a single scalar so we can put into a Eigen3 Sparse matrix
 int RandomWorld::_ij2val(Engine::Point2D<int> pos) {
     Engine::Size<int> s = this->getConfig().getSize();
-    return pos._x*s._width + pos._y; //_height
+    return pos._x*s._width + pos._y;
+}
+
+int RandomWorld::_ji2val(Engine::Point2D<int> pos) {
+    Engine::Size<int> s = this->getConfig().getSize();
+    return pos._y*s._width + pos._x;
+}
+
+Engine::Point2D<int> RandomWorld::_val2ij(int pos) {
+    Engine::Size<int> s = this->getConfig().getSize();
+    return Engine::Point2D<int>((pos-pos%s._width)/s._width, pos%s._width);
 }
 
 int RandomWorld::_reward(Engine::Point2D<int> pos) 
@@ -128,19 +148,7 @@ void RandomWorld::step()
             this->getCurrentTimeStep(), 
             this->_reward(a->getPosition()) 
             ));
-        
-        int basisCounter = 0;
-        for(auto basis:basisCenters)
-        {
-            //sum over the agents of the activation for each basis
-            //WARNING: not used, this is current activation, we are interested in "potential activation" in x'_i
-            basisActivation[basisCounter] += activation(basis._x, a->getPosition()._x, sigma)*activation(basis._y, a->getPosition()._y, sigma);
-            basisCounter++;
-        }
     }
-    
-    //store [timestep, basis, activation]
-    _phi.push_back(basisActivation);
 }
 
 std::vector<float> RandomWorld::getPhiOfPos(Engine::Point2D<int> pos)
@@ -232,8 +240,9 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             transitionProbabilities.push_back(_tp);
 
             // getting phi_k
-            std::vector<float> basisActivation = getPhiOfPos(targetCell);
-            for (auto basis:basisActivation) std::cout << (int)(basis*1000)/1000.0 << "\t";
+            std::vector<float> phi_stored = _phi.at(_ji2val(targetCell));
+            std::cout << "\033[1;35m" << "Phi(" << _val2ij(_ji2val(_val2ij(_ji2val(targetCell)))) << "):\t" << "\033[0m";
+            for (auto phi_k:phi_stored) std::cout << (int)(phi_k*1000)/1000.0 << "\t";
             std::cout << std::endl;
         }
     }

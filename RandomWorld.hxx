@@ -19,6 +19,8 @@ class RandomWorldConfig;
 class RandomWorld : public Engine::World
 {
     int _ij2val(Engine::Point2D<int>);
+    Engine::Point2D<int> _val2ij(int);
+    int _ji2val(Engine::Point2D<int>);
     int _reward(Engine::Point2D<int>);
     void createRasters();
     void createAgents();
