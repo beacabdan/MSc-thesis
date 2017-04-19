@@ -129,16 +129,20 @@ void RandomWorld::step()
     //step the world 
     std::cout << "WORLD::STEP " << getCurrentTimeStep() << std::endl;
     World::step();
-    pHat = 1;
     
     //get needed values from the config.xml file
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
     int maxAgents = randomConfig._numAgents; 
     const int numBasis = randomConfig._numBasis; 
     float sigma = randomConfig._basisSigma; 
+    int maxTime = randomConfig._timeHorizon-1;
     
-    //phi matrix how much agents activate basis b at every timestep
-    std::vector<float> basisActivation(numBasis*numBasis);
+    //else the world runs once more this step() and changes the values
+    if (getCurrentTimeStep() < maxTime) 
+    {
+        pHat = 1;
+        qHat = 1;
+    }
     
     //for each agent
 	for(auto it=this->beginAgents(); it!=this->endAgents(); it++)
@@ -161,6 +165,12 @@ void RandomWorld::step()
             this->_reward(a->getPosition()) 
             ));
     }
+}
+
+//returns the ratio between q(x_{1:T}) and p_theta(x_{1:T})
+float RandomWorld::getQoverP()
+{
+    return qHat / pHat;
 }
 
 std::vector<float> RandomWorld::getPhiOfPos(Engine::Point2D<int> pos)
@@ -259,6 +269,7 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             
             //q(x'_i|x_i)
             float q = getQ(pos, targetCell);
+            qHat *= q;
             
             //p_theta(x'_i|x_i)
             float p_theta_x = psi * q;
@@ -287,8 +298,8 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     
     //p_hat
     pHat *= p_theta.at(index);
-    std::cout << "pHat: " << pHat << std::endl;;
-    std::cout << std::endl;
+    std::cout << "pHat: " << pHat << std::endl;
+    std::cout << "qHat: " << qHat << std::endl;
     
     //TODO: store which \hat p_theta was used
     return neighbours.at(index);

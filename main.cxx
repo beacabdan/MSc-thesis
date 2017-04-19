@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
         int maxAgents = randomConfig->_numAgents;
         int maxSteps = randomConfig->getNumSteps();
         int numBasis = randomConfig->_numBasis;
+        float lambda = randomConfig->_lambda;
 
         for(int i=0; i<maxIt; i++) 
         {
@@ -86,13 +87,19 @@ int main(int argc, char *argv[])
                 rewards.setFromTriplets(world._rwd_spr_coeff.begin(), world._rwd_spr_coeff.end());
                 reward_rolls.push_back(rewards);
 
-                /*printIntMatrix(states, "State");                
+                /*printIntMatrix(states, "State");            
                 printIntMatrix(rewards, "Reward");*/
-            }
+                
+                int costSum = 0;
+                for (auto rewardTriplet:world._rwd_spr_coeff)
+                {
+                    costSum += rewardTriplet.value();
+                }
 
-            //compute Z_theta (normalization term)
-            //compute p_theta
-            //update omega weights for current rollout
+                //update omega weights for current rollout                
+                float omega = world.pHat;
+                std::cout << "\033[1;34m" << "omega_" << tau << "(x_{1:" << maxSteps << "}): " << "\033[0m" << world.getQoverP() * exp(-(1/lambda)*costSum) << std::endl << std::endl;
+            }
             //update Theta_{t+1}
         }
     }

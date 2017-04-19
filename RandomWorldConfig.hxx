@@ -18,7 +18,8 @@ public:
     int _numBasis;
     float _basisSigma;
     float _lambda;
-
+    int _timeHorizon;
+    
 	RandomWorldConfig( const std::string & xmlFile );
 	virtual ~RandomWorldConfig();
 
