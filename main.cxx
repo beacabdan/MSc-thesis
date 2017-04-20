@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
             
             std::vector<SparseMatrixType> state_rolls;
             std::vector<SparseMatrixType> reward_rolls;
+            std::vector<double> omega_weights;
 
             // Execute tau rollouts
             for(int tau=0; tau<maxRolls; tau++) 
@@ -96,10 +97,17 @@ int main(int argc, char *argv[])
                     costSum += rewardTriplet.value();
                 }
 
-                //update omega weights for current rollout                
-                float omega = world.pHat;
-                std::cout << "\033[1;34m" << "omega_" << tau << "(x_{1:" << maxSteps << "}): " << "\033[0m" << world.getQoverP()  << " * " <<  exp(-(1/lambda)*costSum) << std::endl << std::endl;
+                //update omega weights for current rollout
+                double current_omega = world.getQoverP() * exp(-(1/lambda)*costSum);
+                std::cout << "\033[1;34m" << "omega_" << tau << "(x_{1:" << maxSteps << "}): " << "\033[0m" << world.getQoverP() << " * " << exp(-(1/lambda)*costSum) << std::endl;
+                std::cout << "\033[1;34m" << "omega_" << tau << "(x_{1:" << maxSteps << "}): " << "\033[0m" << current_omega << std::endl << std::endl;
+                omega_weights.push_back(current_omega);
             }
+            
+            std::cout << "\033[1;33m" << "omega:" << "\033[0m\t";
+            for (auto omega_tau:omega_weights)
+                std::cout << omega_tau << "\t";
+            std::cout << std::endl;
             //update Theta_{t+1}
         }
     }

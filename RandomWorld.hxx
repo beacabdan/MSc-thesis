@@ -34,8 +34,6 @@ public:
     std::vector<Engine::Point2D<int>> basisCenters;
     std::vector<std::vector<float>> _phi;
     std::vector<float> theta;
-    float pHat;
-    float qHat;
     float logqpHat;
 
     Engine::Point2D<int> getAction(Engine::Agent &); 
@@ -46,7 +44,7 @@ public:
     float getQ(Engine::Point2D<int>, Engine::Point2D<int>);
     void initBasis();
     std::vector<float> getPhiOfPos(Engine::Point2D<int>);
-    float getQoverP();
+    double getQoverP();
 	
 };
 

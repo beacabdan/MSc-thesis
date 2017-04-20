@@ -13,8 +13,7 @@ namespace Examples
 
 RandomWorld::RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler ) : World(config, scheduler, false)
 {
-    pHat = 0;
-    qHat = 0;
+    logqpHat = 0;
 }
 
 RandomWorld::~RandomWorld()
@@ -163,9 +162,9 @@ void RandomWorld::step()
 }
 
 //returns the ratio between q(x_{1:T}) and p_theta(x_{1:T})
-float RandomWorld::getQoverP()
+double RandomWorld::getQoverP()
 {
-    return exp(qHat - pHat);
+    return exp(logqpHat);
 }
 
 std::vector<float> RandomWorld::getPhiOfPos(Engine::Point2D<int> pos)
@@ -290,12 +289,8 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     // stochastically choose an action depending on the transition probabilities
     int index = chooseRandom(p_theta);
     
-    //p_hat
-    pHat += log(p_theta.at(index));
-    qHat += log(getQ(pos, neighbours.at(index)));
-    
-    /*std::cout << "pHat: " << pHat << "\t" << p_theta.at(index) << "\t" << log(p_theta.at(index)) << std::endl;
-    std::cout << "qHat: " << qHat << "\t" << getQ(pos, neighbours.at(index)) << "\t" << log(getQ(pos, neighbours.at(index))) << std::endl;*/
+    //p_hat & q_hat
+    logqpHat += log(getQ(pos, neighbours.at(index)) / p_theta.at(index));
     
     //TODO: store which \hat p_theta was used
     return neighbours.at(index);
