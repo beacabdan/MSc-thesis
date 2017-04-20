@@ -36,6 +36,7 @@ public:
     std::vector<float> theta;
     float pHat;
     float qHat;
+    float logqpHat;
 
     Engine::Point2D<int> getAction(Engine::Agent &); 
     RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);

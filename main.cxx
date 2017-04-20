@@ -38,7 +38,7 @@ int updatePolicy(int pstar, int state)
 int main(int argc, char *argv[])
 {
     int maxIt=2;
-    int maxRolls=2;
+    int maxRolls=3;
 
     try
     {
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
             // Execute tau rollouts
             for(int tau=0; tau<maxRolls; tau++) 
             {
-                std::cout << "\033[1;34m\n" << "ROLL " << i << "\033[0m" << std::endl;
+                std::cout << "\033[1;34m\n" << "ROLL " << tau << "\033[0m" << std::endl;
                 Examples::RandomWorld world(new Examples::RandomWorldConfig(fileName), world.useOpenMPSingleNode());
 
                 world.initialize(argc, argv);
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
                 //update omega weights for current rollout                
                 float omega = world.pHat;
-                std::cout << "\033[1;34m" << "omega_" << tau << "(x_{1:" << maxSteps << "}): " << "\033[0m" << world.getQoverP() * exp(-(1/lambda)*costSum) << std::endl << std::endl;
+                std::cout << "\033[1;34m" << "omega_" << tau << "(x_{1:" << maxSteps << "}): " << "\033[0m" << world.getQoverP()  << " * " <<  exp(-(1/lambda)*costSum) << std::endl << std::endl;
             }
             //update Theta_{t+1}
         }

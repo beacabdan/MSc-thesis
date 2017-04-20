@@ -13,6 +13,8 @@ namespace Examples
 
 RandomWorld::RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler ) : World(config, scheduler, false)
 {
+    pHat = 0;
+    qHat = 0;
 }
 
 RandomWorld::~RandomWorld()
@@ -127,7 +129,7 @@ double activation(int x, int mean_x, double sigma) {
 void RandomWorld::step()
 {
     //step the world 
-    std::cout << "WORLD::STEP " << getCurrentTimeStep() << std::endl;
+    //std::cout << "WORLD::STEP " << getCurrentTimeStep() << std::endl;
     World::step();
     
     //get needed values from the config.xml file
@@ -136,13 +138,6 @@ void RandomWorld::step()
     const int numBasis = randomConfig._numBasis; 
     float sigma = randomConfig._basisSigma; 
     int maxTime = randomConfig._timeHorizon-1;
-    
-    //else the world runs once more this step() and changes the values
-    if (getCurrentTimeStep() < maxTime) 
-    {
-        pHat = 1;
-        qHat = 1;
-    }
     
     //for each agent
 	for(auto it=this->beginAgents(); it!=this->endAgents(); it++)
@@ -170,7 +165,7 @@ void RandomWorld::step()
 //returns the ratio between q(x_{1:T}) and p_theta(x_{1:T})
 float RandomWorld::getQoverP()
 {
-    return qHat / pHat;
+    return exp(qHat - pHat);
 }
 
 std::vector<float> RandomWorld::getPhiOfPos(Engine::Point2D<int> pos)
@@ -269,7 +264,6 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             
             //q(x'_i|x_i)
             float q = getQ(pos, targetCell);
-            qHat *= q;
             
             //p_theta(x'_i|x_i)
             float p_theta_x = psi * q;
@@ -290,16 +284,18 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
         p_theta.at(i) /= Z;
         sum += p_theta.at(i);
         
-        std::cout << "\033[1;35m" << "p_theta(" << neighbours.at(i) << "|" << pos << "): " << "\033[0m" << p_theta.at(i) << std::endl;
+        //std::cout << "\033[1;35m" << "p_theta(" << neighbours.at(i) << "|" << pos << "): " << "\033[0m" << p_theta.at(i) << std::endl;
     }
     
     // stochastically choose an action depending on the transition probabilities
     int index = chooseRandom(p_theta);
     
     //p_hat
-    pHat *= p_theta.at(index);
-    std::cout << "pHat: " << pHat << std::endl;
-    std::cout << "qHat: " << qHat << std::endl;
+    pHat += log(p_theta.at(index));
+    qHat += log(getQ(pos, neighbours.at(index)));
+    
+    /*std::cout << "pHat: " << pHat << "\t" << p_theta.at(index) << "\t" << log(p_theta.at(index)) << std::endl;
+    std::cout << "qHat: " << qHat << "\t" << getQ(pos, neighbours.at(index)) << "\t" << log(getQ(pos, neighbours.at(index))) << std::endl;*/
     
     //TODO: store which \hat p_theta was used
     return neighbours.at(index);
