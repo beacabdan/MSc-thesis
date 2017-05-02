@@ -64,7 +64,7 @@ void RandomWorld::initBasis()
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();    
     int width = getBoundaries()._size._width;
     int height = getBoundaries()._size._height;
-    int numBasis = randomConfig._numBasis;
+    int numBasis = randomConfig._numBasisX;
     
     //compute positions of basis
     int leftMargin = width % numBasis;
@@ -88,12 +88,12 @@ void RandomWorld::initBasis()
         }
     }
 
-    //initialize theta as theta_k=0 for all k
-    theta = std::vector<float>(numBasis*numBasis);
+    //initialize theta as phi_k=0 for all k
+    phi_k = std::vector<float>(numBasis*numBasis);
 
     //store [x][y][k][phi]
     for(auto index:getBoundaries())
-    {        
+    {
         _phi.push_back(getPhiOfPos(index));
     }
 }
@@ -116,9 +116,11 @@ Engine::Point2D<int> RandomWorld::_val2ij(int pos) {
 
 int RandomWorld::_reward(Engine::Point2D<int> pos) 
 {
+    float reward = 1;
+    float penalty = 0;
 	const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
-	if (pos.distance(Engine::Point2D<int>(randomConfig._rewardPosX, randomConfig._rewardPosY)) < randomConfig._rewardAreaSize) return 0;
-    return -1;
+	if (pos.distance(Engine::Point2D<int>(randomConfig._rewardPosX, randomConfig._rewardPosY)) < randomConfig._rewardAreaSize) return reward;
+    return penalty;
 }
 
 double activation(int x, int mean_x, double sigma) {
@@ -134,7 +136,7 @@ void RandomWorld::step()
     //get needed values from the config.xml file
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
     int maxAgents = randomConfig._numAgents; 
-    const int numBasis = randomConfig._numBasis; 
+    const int numBasis = randomConfig._numBasisX; 
     float sigma = randomConfig._basisSigma; 
     int maxTime = randomConfig._timeHorizon-1;
     
@@ -171,7 +173,7 @@ std::vector<float> RandomWorld::getPhiOfPos(Engine::Point2D<int> pos)
 {
     //get needed values from the config.xml file
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
-    const int numBasis = randomConfig._numBasis; 
+    const int numBasis = randomConfig._numBasisX; 
     float sigma = randomConfig._basisSigma; 
     
     //vector: for each basis, activation by a single agent / pos
@@ -231,6 +233,7 @@ int RandomWorld::chooseRandom(std::vector<float> transitions) {
 
 Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
 {
+    std::cout << "AGENT" << std::endl;
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
     Engine::Point2D<int> pos = a.getPosition();
     std::vector<Engine::Point2D<int>> neighbours;
@@ -238,14 +241,16 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     
     //parameters
     float lambda = randomConfig._lambda; //temperature
+    int numBasis = randomConfig._numBasisX;
+    numBasis *= numBasis;
     float Z = 0; //normalization
     
     // Get neighbours
     neighbours.push_back(pos);
     neighbours.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
     neighbours.push_back(Engine::Point2D<int> (pos._x-1, pos._y)); 
-    neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); 
-    neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
+    //neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); 
+    //neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
 
     // for each of the possible target cells
     for(auto targetCell : neighbours) 
@@ -255,12 +260,26 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
         {
             //phi(x'_i)
             std::vector<float> phi_stored = _phi.at(_ji2val(targetCell));
+            
+            //normalize phi(x'_i)
+            float sum_phi = 0;
+            for (int k = 0; k < numBasis; k++) sum_phi += phi_stored.at(k);
+            for (int k = 0; k < numBasis; k++) phi_stored.at(k) /= sum_phi; //BEA
+            
+            //sum phi(x_t) for all agents (for theta update)
+            for (int k = 0; k < numBasis; k++) phi_k.at(k) += phi_stored.at(k);
                      
             //psi(x'_i)
             float psi = 1;            
-            for (auto phi_k:phi_stored)
-                psi *= exp(-(1.0/lambda) * phi_k); //TODO: add theta_k
-            
+            for (int k = 0; k < numBasis; k++) 
+            {
+                //std::cout << pos << "->" << targetCell << "\tphi_stored.at(" << k << ") " << phi_stored.at(k) << std::endl;
+                std::cout << pos << "->" << targetCell << "\t     theta.at(" << k << ") " << theta.at(k) << std::endl;
+                std::cout << "exp(" << -(1.0/lambda) * phi_stored.at(k) * theta.at(k)<< ") = " << exp(-(1.0/lambda) * phi_stored.at(k) * theta.at(k)) << std::endl;
+                psi *= exp(-(1.0/lambda) * phi_stored.at(k) * theta.at(k));                
+            }
+            //std::cout << "psi " << psi << std::endl;
+           
             //q(x'_i|x_i)
             float q = getQ(pos, targetCell);
             
@@ -281,9 +300,7 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     for(std::vector<float>::size_type i = 0; i != p_theta.size(); i++)
     {
         p_theta.at(i) /= Z;
-        sum += p_theta.at(i);
-        
-        //std::cout << "\033[1;35m" << "p_theta(" << neighbours.at(i) << "|" << pos << "): " << "\033[0m" << p_theta.at(i) << std::endl;
+        std::cout << "\033[1;35m" << "p_theta(" << neighbours.at(i) << "|" << pos << "): " << "\033[0m" << p_theta.at(i) << std::endl;
     }
     
     // stochastically choose an action depending on the transition probabilities
@@ -312,7 +329,7 @@ void RandomWorld::createAgents()
 			addAgent(agent);
 			//If we want to apply rollout we need the agents to start always in the same positions
 			//TODO: define a function to set the position on the map instead of putting all of them into the same box
-			Engine::Point2D<int> pos(1,1); 
+			Engine::Point2D<int> pos(3,0); 
 			agent->setPosition(pos);
 			log_INFO(logName.str(), getWallTime() << " new agent: " << agent);
 		}

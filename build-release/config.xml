@@ -2,11 +2,12 @@
 <config>  
 	<!-- Global simulation parameters -->
 	<output resultsFile="./data/randomWalkers.h5" logsDir="./logs"/>
-	<numSteps value="50" serializeResolution="1"/>
-	<size width="8" height="8"/>
-	<numAgents value="10"/>
-    <reward xpos="3" ypos="3" size="2"/>
-    <numBasis value="3" sigma="1.0"/>
-    <lambda value="1.0"/>
+	<numSteps value="10" serializeResolution="1"/>
+	<size width="7" height="2"/>
+	<numAgents value="3"/>
+    <reward xpos="1" ypos="0" size="2"/>
+    <numBasis xrange="2" yrange="1" sigma="2.0"/>
+    <lambda value="0.5"/>
+    <learningRate value="0.5"/>
 </config>
 

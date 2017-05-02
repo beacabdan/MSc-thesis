@@ -15,9 +15,11 @@ public:
 	int _rewardPosX;
 	int _rewardPosY;
 	int _rewardAreaSize;
-    int _numBasis;
+    int _numBasisX;
+    int _numBasisY;
     float _basisSigma;
     float _lambda;
+    float _learningRate;
     int _timeHorizon;
     
 	RandomWorldConfig( const std::string & xmlFile );

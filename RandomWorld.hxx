@@ -33,7 +33,8 @@ public:
     std::vector<Tf> _q;
     std::vector<Engine::Point2D<int>> basisCenters;
     std::vector<std::vector<float>> _phi;
-    std::vector<float> theta;
+    std::vector<double> theta;
+    std::vector<float> phi_k;
     float logqpHat;
 
     Engine::Point2D<int> getAction(Engine::Agent &); 

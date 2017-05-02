@@ -37,7 +37,7 @@ int updatePolicy(int pstar, int state)
 
 int main(int argc, char *argv[])
 {
-    int maxIt=2;
+    int maxIt=1;
     int maxRolls=3;
 
     try
@@ -58,8 +58,9 @@ int main(int argc, char *argv[])
         randomConfig->loadFile();
         int maxAgents = randomConfig->_numAgents;
         int maxSteps = randomConfig->getNumSteps();
-        int numBasis = randomConfig->_numBasis;
+        int numBasis = randomConfig->_numBasisX;
         float lambda = randomConfig->_lambda;
+        float eta = randomConfig->_learningRate;
 
         for(int i=0; i<maxIt; i++) 
         {
@@ -68,6 +69,7 @@ int main(int argc, char *argv[])
             std::vector<SparseMatrixType> state_rolls;
             std::vector<SparseMatrixType> reward_rolls;
             std::vector<double> omega_weights;
+            std::vector<double>theta(numBasis*numBasis);
 
             // Execute tau rollouts
             for(int tau=0; tau<maxRolls; tau++) 
@@ -78,6 +80,7 @@ int main(int argc, char *argv[])
                 world.initialize(argc, argv);
                 world.initQ();      //uncontrolled dynamics
                 world.initBasis();  //center of RBF
+                world.theta = theta;
                 world.run();
               
                 SparseMatrixType states(maxAgents,maxSteps);
@@ -88,8 +91,8 @@ int main(int argc, char *argv[])
                 rewards.setFromTriplets(world._rwd_spr_coeff.begin(), world._rwd_spr_coeff.end());
                 reward_rolls.push_back(rewards);
 
-                /*printIntMatrix(states, "State");            
-                printIntMatrix(rewards, "Reward");*/
+                //printIntMatrix(states, "State");
+                printIntMatrix(rewards, "Reward");
                 
                 int costSum = 0;
                 for (auto rewardTriplet:world._rwd_spr_coeff)
@@ -98,17 +101,56 @@ int main(int argc, char *argv[])
                 }
 
                 //update omega weights for current rollout
-                double current_omega = world.getQoverP() * exp(-(1/lambda)*costSum);
-                std::cout << "\033[1;34m" << "omega_" << tau << "(x_{1:" << maxSteps << "}): " << "\033[0m" << world.getQoverP() << " * " << exp(-(1/lambda)*costSum) << std::endl;
-                std::cout << "\033[1;34m" << "omega_" << tau << "(x_{1:" << maxSteps << "}): " << "\033[0m" << current_omega << std::endl << std::endl;
+                double current_omega = world.getQoverP() * exp(-costSum/lambda); //BEA /(double)(maxSteps*maxAgents)
+                std::cout << "q/p " << world.getQoverP() << "\tcostSum " << costSum << std::endl;
+                std::cout << "\033[1;34m" << "omega_" << tau << ": " << "\033[0m" << current_omega << std::endl;
                 omega_weights.push_back(current_omega);
+                
+                //update theta'
+                float phi_k_x_t;
+                float phi_sum = 0;
+                float theta_sum = 0;
+                
+                //interested in one basis at a time (for each parameter of the theta vector)
+                for (int k = 0; k < numBasis*numBasis; k++)
+                {
+                    phi_sum += world.phi_k.at(k);
+                }
+                for (int k = 0; k < numBasis*numBasis; k++)
+                {
+                    phi_k_x_t = world.phi_k.at(k);
+                    phi_k_x_t /= phi_sum; //BEA normalize
+                    theta.at(k) -= eta/lambda * phi_k_x_t * (current_omega - 1); //BEA
+                    theta_sum += theta.at(k);
+                }
+                for (int k = 0; k < numBasis*numBasis; k++)
+                {
+                    theta.at(k) /= theta_sum; //BEA normalize
+                    world.theta.at(k) = theta.at(k);
+                }
+                for (int k = 0; k < numBasis; k++)
+                {
+                    for (int k_ = 0; k_ < numBasis; k_++)
+                        std::cout << (int)(world.phi_k.at(k_+numBasis*k)*100)/100.0 << "\t";
+                    std::cout << std::endl;
+                }
+                std::cout << std::endl;
+                
+                for (int k = 0; k < numBasis; k++)
+                {
+                    for (int k_ = 0; k_ < numBasis; k_++)
+                        std::cout << theta.at(k_+numBasis*k) << "\t";
+                    std::cout << std::endl;
+                }
+                std::cout << std::endl;
             }
             
-            std::cout << "\033[1;33m" << "omega:" << "\033[0m\t";
+            /*std::cout << "\033[1;33m" << "omega:" << "\033[0m\t";
             for (auto omega_tau:omega_weights)
                 std::cout << omega_tau << "\t";
-            std::cout << std::endl;
-            //update Theta_{t+1}
+            std::cout << std::endl;*/
+            
+            //update Theta_{t+1} ?
         }
     }
     catch( std::exception & exceptionThrown )
