@@ -218,7 +218,7 @@ float RandomWorld::L(int a, int b) {
   }
 
 //returns the index of the action chosen according to p_theta(x'_i|x_i)
-int RandomWorld::chooseRandom(std::vector<float> transitions) {
+int RandomWorld::chooseRandom(std::vector<double> transitions) {
     float dice = ( (rand() % 100) / 100.0 );
 
     for(int i=0; i< transitions.size(); i++) 
@@ -233,24 +233,24 @@ int RandomWorld::chooseRandom(std::vector<float> transitions) {
 
 Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
 {
-    std::cout << "AGENT" << std::endl;
+    //std::cout << "AGENT" << std::endl;
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
     Engine::Point2D<int> pos = a.getPosition();
     std::vector<Engine::Point2D<int>> neighbours;
-    std::vector<float> p_theta;
+    std::vector<double> p_theta;
     
     //parameters
     float lambda = randomConfig._lambda; //temperature
     int numBasis = randomConfig._numBasisX;
     numBasis *= numBasis;
-    float Z = 0; //normalization
+    double Z = 0; //normalization
     
     // Get neighbours
     neighbours.push_back(pos);
     neighbours.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
     neighbours.push_back(Engine::Point2D<int> (pos._x-1, pos._y)); 
-    //neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); 
-    //neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
+    neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); 
+    neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
 
     // for each of the possible target cells
     for(auto targetCell : neighbours) 
@@ -270,13 +270,20 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             for (int k = 0; k < numBasis; k++) phi_k.at(k) += phi_stored.at(k);
                      
             //psi(x'_i)
-            float psi = 1;            
+            double psi = 1;            
             for (int k = 0; k < numBasis; k++) 
             {
-                //std::cout << pos << "->" << targetCell << "\tphi_stored.at(" << k << ") " << phi_stored.at(k) << std::endl;
+                /*std::cout << pos << "->" << targetCell << "\tphi_stored.at(" << k << ") " << phi_stored.at(k) << std::endl;
                 std::cout << pos << "->" << targetCell << "\t     theta.at(" << k << ") " << theta.at(k) << std::endl;
-                std::cout << "exp(" << -(1.0/lambda) * phi_stored.at(k) * theta.at(k)<< ") = " << exp(-(1.0/lambda) * phi_stored.at(k) * theta.at(k)) << std::endl;
+                std::cout << "exp(" << -(1.0/lambda) * phi_stored.at(k) * theta.at(k)<< ") = " << exp(-(1.0/lambda) * phi_stored.at(k) * theta.at(k)) << std::endl;*/
                 psi *= exp(-(1.0/lambda) * phi_stored.at(k) * theta.at(k));                
+                
+                if (isinf(psi))
+                {
+                    /*std::cout << "\033[1;34m" << "FUCK!" << "\033[0m" << std::endl;
+                    std::cout << "psi *= " << exp(-(1.0/lambda) * phi_stored.at(k) * theta.at(k)) << std::endl;*/
+                    psi = DBL_MAX;
+                }
             }
             //std::cout << "psi " << psi << std::endl;
            
@@ -284,7 +291,7 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             float q = getQ(pos, targetCell);
             
             //p_theta(x'_i|x_i)
-            float p_theta_x = psi * q;
+            double p_theta_x = psi * q;
             
             p_theta.push_back(p_theta_x);
             Z += p_theta_x;
@@ -294,22 +301,19 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             p_theta.push_back(0.0);
         }
     }
-    
-    float sum = 0;
-    int counter = 0;
+        
     for(std::vector<float>::size_type i = 0; i != p_theta.size(); i++)
     {
         p_theta.at(i) /= Z;
-        std::cout << "\033[1;35m" << "p_theta(" << neighbours.at(i) << "|" << pos << "): " << "\033[0m" << p_theta.at(i) << std::endl;
     }
     
     // stochastically choose an action depending on the transition probabilities
     int index = chooseRandom(p_theta);
     
-    //p_hat & q_hat
+    //store which \hat p_theta was used (p_hat & q_hat)
     logqpHat += log(getQ(pos, neighbours.at(index)) / p_theta.at(index));
+    //std::cout << "P AT INDX " << index << " " << p_theta.at(index) << std::endl;
     
-    //TODO: store which \hat p_theta was used
     return neighbours.at(index);
 }
 
@@ -329,7 +333,7 @@ void RandomWorld::createAgents()
 			addAgent(agent);
 			//If we want to apply rollout we need the agents to start always in the same positions
 			//TODO: define a function to set the position on the map instead of putting all of them into the same box
-			Engine::Point2D<int> pos(3,0); 
+			Engine::Point2D<int> pos(1,1); 
 			agent->setPosition(pos);
 			log_INFO(logName.str(), getWallTime() << " new agent: " << agent);
 		}

@@ -25,7 +25,7 @@ class RandomWorld : public Engine::World
     void createRasters();
     void createAgents();
     float L(int, int);
-    int chooseRandom(std::vector<float>);
+    int chooseRandom(std::vector<double>);
 
 public:	
     std::vector<T> _pos_spr_coeff;
@@ -35,7 +35,7 @@ public:
     std::vector<std::vector<float>> _phi;
     std::vector<double> theta;
     std::vector<float> phi_k;
-    float logqpHat;
+    double logqpHat;
 
     Engine::Point2D<int> getAction(Engine::Agent &); 
     RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler = 0);

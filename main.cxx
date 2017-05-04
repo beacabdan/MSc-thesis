@@ -37,8 +37,8 @@ int updatePolicy(int pstar, int state)
 
 int main(int argc, char *argv[])
 {
-    int maxIt=1;
-    int maxRolls=3;
+    int maxIt=14;
+    int maxRolls=50;
 
     try
     {
@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
         int numBasis = randomConfig->_numBasisX;
         float lambda = randomConfig->_lambda;
         float eta = randomConfig->_learningRate;
+        std::vector<double> theta(numBasis*numBasis);
 
         for(int i=0; i<maxIt; i++) 
         {
@@ -69,12 +70,14 @@ int main(int argc, char *argv[])
             std::vector<SparseMatrixType> state_rolls;
             std::vector<SparseMatrixType> reward_rolls;
             std::vector<double> omega_weights;
-            std::vector<double>theta(numBasis*numBasis);
+            std::vector<double> phi_k(numBasis*numBasis);
+            std::vector<double> phi_k_weighted(numBasis*numBasis);
+            double omega_sum = 0;
 
             // Execute tau rollouts
             for(int tau=0; tau<maxRolls; tau++) 
             {
-                std::cout << "\033[1;34m\n" << "ROLL " << tau << "\033[0m" << std::endl;
+                //std::cout << "\033[1;34m\n" << "ROLL " << tau << "\033[0m" << std::endl;
                 Examples::RandomWorld world(new Examples::RandomWorldConfig(fileName), world.useOpenMPSingleNode());
 
                 world.initialize(argc, argv);
@@ -92,7 +95,7 @@ int main(int argc, char *argv[])
                 reward_rolls.push_back(rewards);
 
                 //printIntMatrix(states, "State");
-                printIntMatrix(rewards, "Reward");
+                //printIntMatrix(rewards, "Reward");
                 
                 int costSum = 0;
                 for (auto rewardTriplet:world._rwd_spr_coeff)
@@ -101,56 +104,62 @@ int main(int argc, char *argv[])
                 }
 
                 //update omega weights for current rollout
-                double current_omega = world.getQoverP() * exp(-costSum/lambda); //BEA /(double)(maxSteps*maxAgents)
+                double current_omega = world.getQoverP() * exp(-costSum/lambda);
                 std::cout << "q/p " << world.getQoverP() << "\tcostSum " << costSum << std::endl;
-                std::cout << "\033[1;34m" << "omega_" << tau << ": " << "\033[0m" << current_omega << std::endl;
+                //std::cout << "\033[1;34m" << "omega_" << tau << ": " << "\033[0m" << current_omega << std::endl;
                 omega_weights.push_back(current_omega);
                 
-                //update theta'
-                float phi_k_x_t;
-                float phi_sum = 0;
-                float theta_sum = 0;
-                
-                //interested in one basis at a time (for each parameter of the theta vector)
+                omega_sum += current_omega;
                 for (int k = 0; k < numBasis*numBasis; k++)
                 {
-                    phi_sum += world.phi_k.at(k);
+                    phi_k.at(k) += world.phi_k.at(k);
+                    phi_k_weighted.at(k) += world.phi_k.at(k)*current_omega;
                 }
-                for (int k = 0; k < numBasis*numBasis; k++)
-                {
-                    phi_k_x_t = world.phi_k.at(k);
-                    phi_k_x_t /= phi_sum; //BEA normalize
-                    theta.at(k) -= eta/lambda * phi_k_x_t * (current_omega - 1); //BEA
-                    theta_sum += theta.at(k);
-                }
-                for (int k = 0; k < numBasis*numBasis; k++)
-                {
-                    theta.at(k) /= theta_sum; //BEA normalize
-                    world.theta.at(k) = theta.at(k);
-                }
-                for (int k = 0; k < numBasis; k++)
-                {
-                    for (int k_ = 0; k_ < numBasis; k_++)
-                        std::cout << (int)(world.phi_k.at(k_+numBasis*k)*100)/100.0 << "\t";
-                    std::cout << std::endl;
-                }
-                std::cout << std::endl;
-                
-                for (int k = 0; k < numBasis; k++)
-                {
-                    for (int k_ = 0; k_ < numBasis; k_++)
-                        std::cout << theta.at(k_+numBasis*k) << "\t";
-                    std::cout << std::endl;
-                }
-                std::cout << std::endl;
             }
             
-            /*std::cout << "\033[1;33m" << "omega:" << "\033[0m\t";
-            for (auto omega_tau:omega_weights)
+            std::cout << "\033[1;33m" << "omega:" << "\033[0m\t";
+            for (auto omega_tau:omega_weights) 
+            {
                 std::cout << omega_tau << "\t";
-            std::cout << std::endl;*/
+            }
+            std::cout << std::endl;        
             
             //update Theta_{t+1} ?
+            for (int k = 0; k < numBasis*numBasis; k++)
+            {
+                phi_k_weighted.at(k) /= omega_sum / maxRolls;
+            }
+                        
+            //interested in one basis at a time (for each parameter of the theta vector)
+            for (int k = 0; k < numBasis*numBasis; k++)
+            {
+                theta.at(k) -= eta/lambda * (phi_k.at(k) - phi_k_weighted.at(k)); //BEA
+            }
+            
+            for (int k = 0; k < numBasis; k++)
+            {
+                for (int k_ = 0; k_ < numBasis; k_++)
+                    std::cout << (int)(phi_k.at(k_+numBasis*k)*100)/100.0 << "\t";
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+            
+            for (int k = 0; k < numBasis; k++)
+            {
+                for (int k_ = 0; k_ < numBasis; k_++)
+                    std::cout << (int)(phi_k_weighted.at(k_+numBasis*k)*100)/100.0 << "\t";
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+            
+            for (int k = 0; k < numBasis; k++)
+            {
+                for (int k_ = 0; k_ < numBasis; k_++)
+                    std::cout << (int)(theta.at(k_+numBasis*k)*100)/100.0 << "\t";
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+            
         }
     }
     catch( std::exception & exceptionThrown )
