@@ -37,21 +37,14 @@ int updatePolicy(int pstar, int state)
 
 int main(int argc, char *argv[])
 {
-    int maxIt=14;
-    int maxRolls=50;
+    int maxIt=10;
+    int maxRolls=10;
 
     try
     {
-        if(argc>2)
-        {
-            throw Engine::Exception("USAGE: randomWalkers [config file]");
-        }
-
+        if(argc>2) throw Engine::Exception("USAGE: randomWalkers [config file]");
         std::string fileName("config.xml");
-        if(argc!=1)
-        {
-            fileName = argv[1];
-        }
+        if(argc!=1) fileName = argv[1];
 
         Examples::RandomWorldConfig * randomConfig =  new Examples::RandomWorldConfig(fileName);
 
@@ -73,11 +66,13 @@ int main(int argc, char *argv[])
             std::vector<double> phi_k(numBasis*numBasis);
             std::vector<double> phi_k_weighted(numBasis*numBasis);
             double omega_sum = 0;
+            bool goal_reached = false;
+            int tau = 0;
 
             // Execute tau rollouts
-            for(int tau=0; tau<maxRolls; tau++) 
+            //for(int tau=0; tau<maxRolls; tau++) 
+            while (tau < maxRolls || !goal_reached)            
             {
-                //std::cout << "\033[1;34m\n" << "ROLL " << tau << "\033[0m" << std::endl;
                 Examples::RandomWorld world(new Examples::RandomWorldConfig(fileName), world.useOpenMPSingleNode());
 
                 world.initialize(argc, argv);
@@ -97,32 +92,38 @@ int main(int argc, char *argv[])
                 //printIntMatrix(states, "State");
                 //printIntMatrix(rewards, "Reward");
                 
-                int costSum = 0;
-                for (auto rewardTriplet:world._rwd_spr_coeff)
-                {
-                    costSum += rewardTriplet.value();
-                }
+                //total rollout cost
+                float costSum = 0;
+                for (auto rewardTriplet:world._rwd_spr_coeff) costSum += rewardTriplet.value();
+                costSum /= maxSteps * maxAgents;
+                int final_reward = 0;
+                for (int i = 0; i < maxAgents; i++) final_reward += Eigen::MatrixXf(rewards)(i, maxSteps-1);
 
                 //update omega weights for current rollout
                 double current_omega = world.getQoverP() * exp(-costSum/lambda);
-                std::cout << "q/p " << world.getQoverP() << "\tcostSum " << costSum << std::endl;
-                //std::cout << "\033[1;34m" << "omega_" << tau << ": " << "\033[0m" << current_omega << std::endl;
-                omega_weights.push_back(current_omega);
-                
+                omega_weights.push_back(current_omega);                
                 omega_sum += current_omega;
+                
+                //sum phi 
                 for (int k = 0; k < numBasis*numBasis; k++)
                 {
                     phi_k.at(k) += world.phi_k.at(k);
                     phi_k_weighted.at(k) += world.phi_k.at(k)*current_omega;
                 }
+                
+                //rollout summary                
+                std::cout << "Cost: " << costSum*maxSteps*maxAgents << " <- Weight: " << current_omega << std::endl;
+                
+                //loop control logic
+                if (costSum*maxSteps < maxSteps*maxAgents) goal_reached = true;
+                tau++;
+                
+                if (tau > maxRolls * 10)
+                {
+                    std::cout << "\033[1;31m\nMore than " << maxRolls * 10 << " rollouts were simulated for rollout " << tau << " without the goal being reached.\033[0m" << std::endl;
+                    exit(0);
+                }
             }
-            
-            std::cout << "\033[1;33m" << "omega:" << "\033[0m\t";
-            for (auto omega_tau:omega_weights) 
-            {
-                std::cout << omega_tau << "\t";
-            }
-            std::cout << std::endl;        
             
             //update Theta_{t+1} ?
             for (int k = 0; k < numBasis*numBasis; k++)
@@ -133,33 +134,47 @@ int main(int argc, char *argv[])
             //interested in one basis at a time (for each parameter of the theta vector)
             for (int k = 0; k < numBasis*numBasis; k++)
             {
-                theta.at(k) -= eta/lambda * (phi_k.at(k) - phi_k_weighted.at(k)); //BEA
+                theta.at(k) += eta/lambda * (phi_k.at(k) - phi_k_weighted.at(k)); //BEA
             }
-            
+
+            std::cout << "\033[1;35m\n" << "Phi:" << "\033[0m" << std::endl;
             for (int k = 0; k < numBasis; k++)
             {
                 for (int k_ = 0; k_ < numBasis; k_++)
                     std::cout << (int)(phi_k.at(k_+numBasis*k)*100)/100.0 << "\t";
                 std::cout << std::endl;
             }
-            std::cout << std::endl;
             
+            std::cout << "\033[1;35m\n" << "Weighted phi:" << "\033[0m" << std::endl;
             for (int k = 0; k < numBasis; k++)
             {
                 for (int k_ = 0; k_ < numBasis; k_++)
                     std::cout << (int)(phi_k_weighted.at(k_+numBasis*k)*100)/100.0 << "\t";
                 std::cout << std::endl;
             }
-            std::cout << std::endl;
             
+            std::cout << "\033[1;35m\n" << "Current theta:" << "\033[0m" << std::endl;
             for (int k = 0; k < numBasis; k++)
             {
                 for (int k_ = 0; k_ < numBasis; k_++)
                     std::cout << (int)(theta.at(k_+numBasis*k)*100)/100.0 << "\t";
                 std::cout << std::endl;
             }
-            std::cout << std::endl;
             
+            std::cout << "\033[1;35m\n" << "Values:" << "\033[0m" << std::endl;
+            double theta_phi_sum = 0;
+            for (int k = 0; k < numBasis; k++)
+            {
+                for (int k_ = 0; k_ < numBasis; k_++)
+                    if(abs(theta.at(k_+numBasis*k)*phi_k_weighted.at(k_+numBasis*k)) > theta_phi_sum) theta_phi_sum = abs(theta.at(k_+numBasis*k)*phi_k_weighted.at(k_+numBasis*k));
+            }            
+            for (int k = 0; k < numBasis; k++)
+            {
+                for (int k_ = 0; k_ < numBasis; k_++)
+                    std::cout << (int)(theta.at(k_+numBasis*k)*phi_k_weighted.at(k_+numBasis*k)/theta_phi_sum*100) << "\t";
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
         }
     }
     catch( std::exception & exceptionThrown )

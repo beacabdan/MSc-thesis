@@ -116,8 +116,8 @@ Engine::Point2D<int> RandomWorld::_val2ij(int pos) {
 
 int RandomWorld::_reward(Engine::Point2D<int> pos) 
 {
-    float reward = 1;
-    float penalty = 0;
+    float reward = 0;
+    float penalty = 1;
 	const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
 	if (pos.distance(Engine::Point2D<int>(randomConfig._rewardPosX, randomConfig._rewardPosY)) < randomConfig._rewardAreaSize) return reward;
     return penalty;
@@ -130,7 +130,6 @@ double activation(int x, int mean_x, double sigma) {
 void RandomWorld::step()
 {
     //step the world 
-    //std::cout << "WORLD::STEP " << getCurrentTimeStep() << std::endl;
     World::step();
     
     //get needed values from the config.xml file
@@ -233,7 +232,6 @@ int RandomWorld::chooseRandom(std::vector<double> transitions) {
 
 Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
 {
-    //std::cout << "AGENT" << std::endl;
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
     Engine::Point2D<int> pos = a.getPosition();
     std::vector<Engine::Point2D<int>> neighbours;
@@ -243,19 +241,19 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     float lambda = randomConfig._lambda; //temperature
     int numBasis = randomConfig._numBasisX;
     numBasis *= numBasis;
-    double Z = 0; //normalization
+    long double Z = 0; //normalization
     
-    // Get neighbours
+    //get neighbours
     neighbours.push_back(pos);
     neighbours.push_back(Engine::Point2D<int> (pos._x+1, pos._y));
     neighbours.push_back(Engine::Point2D<int> (pos._x-1, pos._y)); 
     neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); 
     neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
 
-    // for each of the possible target cells
+    //for each of the possible target cells
     for(auto targetCell : neighbours) 
     {
-        // check if it's a legal action
+        //check if it's a legal action
         if (this->getBoundaries().contains(targetCell)) 
         {
             //phi(x'_i)
@@ -270,22 +268,17 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             for (int k = 0; k < numBasis; k++) phi_k.at(k) += phi_stored.at(k);
                      
             //psi(x'_i)
-            double psi = 1;            
+            long double psi = 1;
             for (int k = 0; k < numBasis; k++) 
             {
-                /*std::cout << pos << "->" << targetCell << "\tphi_stored.at(" << k << ") " << phi_stored.at(k) << std::endl;
-                std::cout << pos << "->" << targetCell << "\t     theta.at(" << k << ") " << theta.at(k) << std::endl;
-                std::cout << "exp(" << -(1.0/lambda) * phi_stored.at(k) * theta.at(k)<< ") = " << exp(-(1.0/lambda) * phi_stored.at(k) * theta.at(k)) << std::endl;*/
-                psi *= exp(-(1.0/lambda) * phi_stored.at(k) * theta.at(k));                
-                
-                if (isinf(psi))
-                {
-                    /*std::cout << "\033[1;34m" << "FUCK!" << "\033[0m" << std::endl;
-                    std::cout << "psi *= " << exp(-(1.0/lambda) * phi_stored.at(k) * theta.at(k)) << std::endl;*/
-                    psi = DBL_MAX;
-                }
+                //WARNING: if phi * theta is too big, psi = 0
+                //theta is big if sum for all t of phi is big
+                //sum for all t of phi is big if T and numRolls are big
+                psi *= exp( - phi_stored.at(k) * theta.at(k) / lambda );
             }
-            //std::cout << "psi " << psi << std::endl;
+           
+            //WARNING: to avoid p_theta = inf -> weight = nan
+            if (isinf(psi) || psi > DBL_MAX) psi = DBL_MAX;
            
             //q(x'_i|x_i)
             float q = getQ(pos, targetCell);
@@ -301,18 +294,26 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             p_theta.push_back(0.0);
         }
     }
-        
+    
+    //normalize p_theta probabilities 0~1
     for(std::vector<float>::size_type i = 0; i != p_theta.size(); i++)
-    {
         p_theta.at(i) /= Z;
-    }
     
     // stochastically choose an action depending on the transition probabilities
     int index = chooseRandom(p_theta);
     
     //store which \hat p_theta was used (p_hat & q_hat)
     logqpHat += log(getQ(pos, neighbours.at(index)) / p_theta.at(index));
-    //std::cout << "P AT INDX " << index << " " << p_theta.at(index) << std::endl;
+    
+    if (isinf(logqpHat) || isnan(logqpHat))
+    {   
+        for(std::vector<float>::size_type i = 0; i != p_theta.size(); i++) 
+            std::cout << "\033[1;35m" << "p_theta(" << neighbours.at(i) << "|" << pos << "): " << "\033[0m" << p_theta.at(i) << std::endl;
+        std::cout << "p at index " << index << " " << p_theta.at(index) << std::endl;
+        std::cout << "log qp hat " << logqpHat << std::endl;
+        std::cout << "\033[1;31m\nExiting execution because log of q over p doesn't have a value.\033[0m" << std::endl;
+        exit(0);
+    }
     
     return neighbours.at(index);
 }
@@ -333,7 +334,7 @@ void RandomWorld::createAgents()
 			addAgent(agent);
 			//If we want to apply rollout we need the agents to start always in the same positions
 			//TODO: define a function to set the position on the map instead of putting all of them into the same box
-			Engine::Point2D<int> pos(1,1); 
+			Engine::Point2D<int> pos(0,0); 
 			agent->setPosition(pos);
 			log_INFO(logName.str(), getWallTime() << " new agent: " << agent);
 		}
