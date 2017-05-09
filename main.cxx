@@ -37,9 +37,6 @@ int updatePolicy(int pstar, int state)
 
 int main(int argc, char *argv[])
 {
-    int maxIt=10;
-    int maxRolls=10;
-
     try
     {
         if(argc>2) throw Engine::Exception("USAGE: randomWalkers [config file]");
@@ -49,6 +46,8 @@ int main(int argc, char *argv[])
         Examples::RandomWorldConfig * randomConfig =  new Examples::RandomWorldConfig(fileName);
 
         randomConfig->loadFile();
+        int maxIt = randomConfig->_maxIt;
+        int maxRolls = randomConfig->_maxRolls;
         int maxAgents = randomConfig->_numAgents;
         int maxSteps = randomConfig->getNumSteps();
         int numBasis = randomConfig->_numBasisX;
@@ -95,7 +94,6 @@ int main(int argc, char *argv[])
                 //total rollout cost
                 float costSum = 0;
                 for (auto rewardTriplet:world._rwd_spr_coeff) costSum += rewardTriplet.value();
-                costSum /= maxSteps * maxAgents;
                 int final_reward = 0;
                 for (int i = 0; i < maxAgents; i++) final_reward += Eigen::MatrixXf(rewards)(i, maxSteps-1);
 
@@ -115,12 +113,12 @@ int main(int argc, char *argv[])
                 std::cout << "Cost: " << costSum*maxSteps*maxAgents << " <- Weight: " << current_omega << std::endl;
                 
                 //loop control logic
-                if (costSum*maxSteps < maxSteps*maxAgents) goal_reached = true;
+                if (costSum < maxSteps*maxAgents) goal_reached = true;
                 tau++;
                 
                 if (tau > maxRolls * 10)
                 {
-                    std::cout << "\033[1;31m\nMore than " << maxRolls * 10 << " rollouts were simulated for rollout " << tau << " without the goal being reached.\033[0m" << std::endl;
+                    std::cout << "\033[1;31m\nMore than " << maxRolls * 10 << " rollouts were simulated in iteration " << i << " without the goal being reached.\033[0m" << std::endl;
                     exit(0);
                 }
             }

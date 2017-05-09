@@ -24,6 +24,8 @@ void RandomWorldConfig::loadParams()
     _basisSigma = getParamFloat( "numBasis", "sigma");
     _lambda = getParamFloat( "lambda", "value");
     _learningRate = getParamFloat( "learningRate", "value");
+    _maxIt = getParamInt( "learningLoop", "iterations");
+    _maxRolls = getParamInt( "learningLoop", "rollouts");
 }
 	
 } // namespace Examples

@@ -12,6 +12,8 @@ class RandomWorldConfig : public Engine::Config
 
 public:
 	int _numAgents;
+    int _maxIt;
+    int _maxRolls;
 	int _rewardPosX;
 	int _rewardPosY;
 	int _rewardAreaSize;
