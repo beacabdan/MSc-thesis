@@ -7,8 +7,8 @@
 	<size width="6" height="6"/>
 	<numAgents value="10"/>
     <reward xpos="5" ypos="4" size="2"/>
-    <numBasis xrange="4" yrange="1" sigma="2.0"/>
-    <lambda value="0.5"/>
-    <learningRate value="0.5"/>
+    <numBasis xrange="3" yrange="1" sigma="2.0"/>
+    <lambda value="0.7"/>
+    <learningRate value="0.3"/>
 </config>
 

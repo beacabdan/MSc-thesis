@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
         float lambda = randomConfig->_lambda;
         float eta = randomConfig->_learningRate;
         std::vector<double> theta(numBasis*numBasis);
+        std::vector<double> average_costs;
 
         for(int i=0; i<maxIt; i++) 
         {
@@ -67,6 +68,8 @@ int main(int argc, char *argv[])
             double omega_sum = 0;
             bool goal_reached = false;
             int tau = 0;
+            double last_omega = 0;
+            double average_cost = 0;
 
             // Execute tau rollouts
             //for(int tau=0; tau<maxRolls; tau++) 
@@ -98,7 +101,8 @@ int main(int argc, char *argv[])
                 for (int i = 0; i < maxAgents; i++) final_reward += Eigen::MatrixXf(rewards)(i, maxSteps-1);
 
                 //update omega weights for current rollout
-                double current_omega = world.getQoverP() * exp(-costSum/lambda);
+                double qoverp = world.getQoverP();
+                double current_omega = qoverp * exp(-costSum/lambda);
                 omega_weights.push_back(current_omega);                
                 omega_sum += current_omega;
                 
@@ -110,10 +114,12 @@ int main(int argc, char *argv[])
                 }
                 
                 //rollout summary                
-                std::cout << "Cost: " << costSum*maxSteps*maxAgents << " <- Weight: " << current_omega << std::endl;
+                std::cout << "Cost: " << costSum << " <- Weight: " << qoverp << " * " << exp(-costSum/lambda) << " = " << current_omega << std::endl;
+                average_cost += costSum;
                 
                 //loop control logic
-                if (costSum < maxSteps*maxAgents) goal_reached = true;
+                if ((tau != 0 && last_omega != current_omega) || costSum < maxSteps*maxAgents) goal_reached = true;
+                last_omega = current_omega;
                 tau++;
                 
                 if (tau > maxRolls * 10)
@@ -122,6 +128,9 @@ int main(int argc, char *argv[])
                     exit(0);
                 }
             }
+            
+            average_cost /= maxRolls;
+            average_costs.push_back(average_cost);
             
             //update Theta_{t+1} ?
             for (int k = 0; k < numBasis*numBasis; k++)
@@ -174,6 +183,13 @@ int main(int argc, char *argv[])
             }
             std::cout << std::endl;
         }
+        
+        std::cout << "AVERAGE COSTS:" << std::endl;
+        for (auto average : average_costs)
+        {
+            std::cout << average << "\t";
+        }
+        std::cout << std::endl;
     }
     catch( std::exception & exceptionThrown )
     {
