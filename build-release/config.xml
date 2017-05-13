@@ -3,12 +3,12 @@
 	<!-- Global simulation parameters -->
 	<output resultsFile="./data/randomWalkers.h5" logsDir="./logs"/>
 	<numSteps value="20" serializeResolution="1"/>
-    <learningLoop iterations="20" rollouts="20"/>
+    <learningLoop iterations="30" rollouts="30"/>
 	<size width="6" height="6"/>
 	<numAgents value="10"/>
     <reward xpos="5" ypos="4" size="2"/>
     <numBasis xrange="3" yrange="1" sigma="2.0"/>
     <lambda value="0.7"/>
-    <learningRate value="0.3"/>
+    <learningRate value="0.1"/>
 </config>
 

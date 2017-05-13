@@ -11,7 +11,7 @@
 namespace Examples 
 {
 
-RandomWorld::RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler ) : World(config, scheduler, false)
+RandomWorld::RandomWorld(Engine::Config * config, Engine::Scheduler * scheduler ) : World(config, scheduler, true)
 {
     logqpHat = 0;
 }
