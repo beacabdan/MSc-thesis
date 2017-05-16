@@ -3,6 +3,8 @@
 #define __RandomWorldConfig_hxx__
 
 #include <Config.hxx>
+#include <Point2D.hxx>
+#include <vector>
 
 namespace Examples
 {
@@ -14,8 +16,8 @@ public:
 	int _numAgents;
     int _maxIt;
     int _maxRolls;
-	int _rewardPosX;
-	int _rewardPosY;
+    int _numRewards;
+    std::vector<Engine::Point2D<int>> _rewardPositions;
 	int _rewardAreaSize;
     int _numBasisX;
     int _numBasisY;

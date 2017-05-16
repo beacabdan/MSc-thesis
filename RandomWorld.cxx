@@ -118,8 +118,13 @@ int RandomWorld::_reward(Engine::Point2D<int> pos)
 {
     float reward = 0;
     float penalty = 1;
+    
 	const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
-	if (pos.distance(Engine::Point2D<int>(randomConfig._rewardPosX, randomConfig._rewardPosY)) < randomConfig._rewardAreaSize) return reward;
+        
+    for (int i = 0; i < randomConfig._numRewards; i++)
+        if (pos.distance(Engine::Point2D<int>(randomConfig._rewardPositions.at(i)._x, randomConfig._rewardPositions.at(i)._y)) < randomConfig._rewardAreaSize) 
+            return reward;
+    
     return penalty;
 }
 
@@ -203,8 +208,9 @@ void RandomWorld::createRasters()
 	for(auto index:getBoundaries())
 	{
         setMaxValue("cost", index, 0);
-		if (index.distance(Engine::Point2D<int>(randomConfig._rewardPosX, randomConfig._rewardPosY)) < randomConfig._rewardAreaSize)
-			setMaxValue("cost", index, 1);
+        for (int i = 0; i < randomConfig._numRewards; i++) 
+            if (index.distance(Engine::Point2D<int>(randomConfig._rewardPositions.at(i)._x, randomConfig._rewardPositions.at(i)._y)) < randomConfig._rewardAreaSize) 
+                setMaxValue("cost", index, 1);        
         setMaxValue("centerRBF", index, 0);
 	}
 	
@@ -334,8 +340,10 @@ void RandomWorld::createAgents()
 			addAgent(agent);
 			//If we want to apply rollout we need the agents to start always in the same positions
 			//TODO: define a function to set the position on the map instead of putting all of them into the same box
-			Engine::Point2D<int> pos(0,0); 
-			agent->setPosition(pos);
+			Engine::Point2D<int> pos(5, 0); 
+            if (i % 2 == 0) pos = Engine::Point2D<int>(0, 0);
+            //Engine::Point2D<int> pos(i%randomConfig.getSize()._width, 0); 
+            agent->setPosition(pos);
 			log_INFO(logName.str(), getWallTime() << " new agent: " << agent);
 		}
 	}
