@@ -72,7 +72,6 @@ int main(int argc, char *argv[])
             double average_cost = 0;
 
             // Execute tau rollouts
-            //for(int tau=0; tau<maxRolls; tau++) 
             while (tau < maxRolls || !goal_reached)            
             {
                 Examples::RandomWorld world(new Examples::RandomWorldConfig(fileName), world.useOpenMPSingleNode());
@@ -82,9 +81,6 @@ int main(int argc, char *argv[])
                 world.initBasis();  //center of RBF
                 world.theta = theta;
                 world.run();
-              
-                SparseMatrixType states(maxAgents,maxSteps);                
-                states.setFromTriplets(world._pos_spr_coeff.begin(), world._pos_spr_coeff.end());
                 
                 SparseMatrixType rewards(maxAgents,maxSteps);               
                 rewards.setFromTriplets(world._rwd_spr_coeff.begin(), world._rwd_spr_coeff.end());

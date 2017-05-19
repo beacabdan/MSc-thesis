@@ -340,8 +340,7 @@ void RandomWorld::createAgents()
 			addAgent(agent);
 			//If we want to apply rollout we need the agents to start always in the same positions
 			//TODO: define a function to set the position on the map instead of putting all of them into the same box
-			Engine::Point2D<int> pos(3, 3); 
-            //if (i % 2 == 0) pos = Engine::Point2D<int>(0, 3);
+			Engine::Point2D<int> pos(3, 3);
             agent->setPosition(pos);
 			log_INFO(logName.str(), getWallTime() << " new agent: " << agent);
 		}
