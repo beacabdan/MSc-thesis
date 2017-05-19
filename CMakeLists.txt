@@ -17,7 +17,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package(PythonInterp 2.7 REQUIRED)
 
-set(generateMPI ${CMAKE_SOURCE_DIR}/bin/generateMpi.py)
+set(generateMPI ${Pandora_DIR}/../bin/generateMpi.py)
 
 set(mpiAgentsSrc mpiCode/FactoryCode.cxx mpiCode/RandomAgent_mpi.cxx)
 set(mpiAgentsSrcFullPath ${CMAKE_CURRENT_SOURCE_DIR}/mpiCode/FactoryCode.cxx ${CMAKE_CURRENT_SOURCE_DIR}/mpiCode/RandomAgent_mpi.cxx)
