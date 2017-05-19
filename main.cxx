@@ -83,16 +83,11 @@ int main(int argc, char *argv[])
                 world.theta = theta;
                 world.run();
               
-                SparseMatrixType states(maxAgents,maxSteps);
+                SparseMatrixType states(maxAgents,maxSteps);                
                 states.setFromTriplets(world._pos_spr_coeff.begin(), world._pos_spr_coeff.end());
-                state_rolls.push_back(states);
                 
-                SparseMatrixType rewards(maxAgents,maxSteps);
+                SparseMatrixType rewards(maxAgents,maxSteps);               
                 rewards.setFromTriplets(world._rwd_spr_coeff.begin(), world._rwd_spr_coeff.end());
-                reward_rolls.push_back(rewards);
-
-                //printIntMatrix(states, "State");
-                //printIntMatrix(rewards, "Reward");
                 
                 //total rollout cost
                 float costSum = 0;
@@ -124,7 +119,7 @@ int main(int argc, char *argv[])
                 
                 if (tau > maxRolls * 10)
                 {
-                    std::cout << "\033[1;31m\nMore than " << maxRolls * 10 << " rollouts were simulated in iteration " << i << " without the goal being reached.\033[0m" << std::endl;
+                    std::cout << "\033[1;31m\nMore than " << maxRolls * 10 << " rollouts were simulated in iteration " << i << " without the goal being reached.\nTry tuning lambda and the learning rate in the config.xml file.\033[0m" << std::endl;
                     exit(0);
                 }
             }
@@ -178,7 +173,7 @@ int main(int argc, char *argv[])
             for (int k = 0; k < numBasis; k++)
             {
                 for (int k_ = 0; k_ < numBasis; k_++)
-                    std::cout << (int)(theta.at(k_+numBasis*k)*phi_k_weighted.at(k_+numBasis*k)/theta_phi_sum*100) << "\t";
+                    std::cout << (int)(theta.at(k_+numBasis*k)*phi_k_weighted.at(k_+numBasis*k)/theta_phi_sum*1000) << "\t";
                 std::cout << std::endl;
             }
             std::cout << std::endl;

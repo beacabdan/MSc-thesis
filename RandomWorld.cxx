@@ -268,7 +268,7 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             //normalize phi(x'_i)
             float sum_phi = 0;
             for (int k = 0; k < numBasis; k++) sum_phi += phi_stored.at(k);
-            for (int k = 0; k < numBasis; k++) phi_stored.at(k) /= sum_phi; //BEA
+            //for (int k = 0; k < numBasis; k++) phi_stored.at(k) /= sum_phi; //BEA
             
             //sum phi(x_t) for all agents (for theta update)
             for (int k = 0; k < numBasis; k++) phi_k.at(k) += phi_stored.at(k);
@@ -340,9 +340,8 @@ void RandomWorld::createAgents()
 			addAgent(agent);
 			//If we want to apply rollout we need the agents to start always in the same positions
 			//TODO: define a function to set the position on the map instead of putting all of them into the same box
-			Engine::Point2D<int> pos(5, 0); 
-            if (i % 2 == 0) pos = Engine::Point2D<int>(0, 0);
-            //Engine::Point2D<int> pos(i%randomConfig.getSize()._width, 0); 
+			Engine::Point2D<int> pos(3, 3); 
+            //if (i % 2 == 0) pos = Engine::Point2D<int>(0, 3);
             agent->setPosition(pos);
 			log_INFO(logName.str(), getWallTime() << " new agent: " << agent);
 		}
