@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
             //interested in one basis at a time (for each parameter of the theta vector)
             for (int k = 0; k < numBasis*numBasis; k++)
             {
-                theta.at(k) += eta/lambda * (phi_k.at(k) - phi_k_weighted.at(k)); //BEA
+                theta.at(k) += eta/lambda/log(i+2) * (phi_k.at(k) - phi_k_weighted.at(k)); //BEA
             }
 
             std::cout << "\033[1;35m\n" << "Phi:" << "\033[0m" << std::endl;

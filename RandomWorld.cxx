@@ -218,12 +218,9 @@ void RandomWorld::createRasters()
     updateRasterToMaxValues("centerRBF");
 }
 
-float RandomWorld::L(int a, int b) {
-    return 0.3;
-  }
-
 //returns the index of the action chosen according to p_theta(x'_i|x_i)
-int RandomWorld::chooseRandom(std::vector<double> transitions) {
+int RandomWorld::chooseRandom(std::vector<double> transitions)
+{
     float dice = ( (rand() % 100) / 100.0 );
 
     for(int i=0; i< transitions.size(); i++) 
@@ -234,6 +231,48 @@ int RandomWorld::chooseRandom(std::vector<double> transitions) {
     }
 
     return 0;
+}
+
+/*
+std::vector<float> RandomWorld::getActivationByAllAgents(Engine::Agent& ag, Engine::Point2D<int> pos)
+{
+    const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
+    int numBasis = randomConfig._numBasisX;
+    numBasis *= numBasis;
+    
+    std::vector<float> activation(numBasis);
+    
+    for(auto it=this->beginAgents(); it!=this->endAgents(); it++)
+	{
+        if(!(*it)->exists()) continue;
+		Engine::Agent * a = (Engine::Agent *) it->get();
+        std::vector<float> phi_stored = _phi.at(this->_ji2val(a->getPosition()));
+        if (a == &ag) phi_stored = _phi.at(this->_ji2val(pos));
+        for (int k = 0; k < numBasis; k++) activation.at(k) += phi_stored.at(k);
+    }
+    return activation;
+}
+ */ 
+
+float RandomWorld::getActivationByAllAgents(Engine::Agent& ag)
+{
+    const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
+    int numBasis = randomConfig._numBasisX;
+    numBasis *= numBasis;
+    float lambda = randomConfig._lambda;
+    
+    float activation_ = 0;
+    
+    for(auto it=this->beginAgents(); it!=this->endAgents(); it++)
+	{		
+        Engine::Agent * a = (Engine::Agent *) it->get();
+        if (a == &ag) continue;
+
+        std::vector<float> phi_stored = _phi.at(this->_ji2val(a->getPosition()));
+        for (int k = 0; k < numBasis; k++) activation_ += phi_stored.at(k) * this->theta.at(k);
+    }
+    
+    return exp(activation_/lambda);
 }
 
 Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
@@ -256,6 +295,9 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y+1)); 
     neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
 
+    float psi_joint = this->getActivationByAllAgents(a);
+    //std::cout << "agent " << a.getId() << ": " << psi_joint << "-------------------" << std::endl;
+
     //for each of the possible target cells
     for(auto targetCell : neighbours) 
     {
@@ -263,14 +305,12 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
         if (this->getBoundaries().contains(targetCell)) 
         {
             //phi(x'_i)
-            std::vector<float> phi_stored = _phi.at(_ji2val(targetCell));
+            std::vector<float> phi_stored = _phi.at(_ji2val(targetCell));            
+            /*std::vector<float> phi_stored = this->getActivationByAllAgents(a);
+            for (int k = 0; k < numBasis; k++) std::cout << phi_stored.at(k) << " " << phi_stored_.at(k) << std::endl;
+            std::cout << std::endl;*/
             
-            //normalize phi(x'_i)
-            float sum_phi = 0;
-            for (int k = 0; k < numBasis; k++) sum_phi += phi_stored.at(k);
-            //for (int k = 0; k < numBasis; k++) phi_stored.at(k) /= sum_phi; //BEA
-            
-            //sum phi(x_t) for all agents (for theta update)
+            //activation of each basis by all agents (for theta update)
             for (int k = 0; k < numBasis; k++) phi_k.at(k) += phi_stored.at(k);
                      
             //psi(x'_i)
@@ -290,8 +330,8 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
             float q = getQ(pos, targetCell);
             
             //p_theta(x'_i|x_i)
-            double p_theta_x = psi * q;
-            
+            double p_theta_x = psi * q * psi_joint;
+                      
             p_theta.push_back(p_theta_x);
             Z += p_theta_x;
         }
@@ -328,8 +368,8 @@ void RandomWorld::createAgents()
 {
 	std::stringstream logName;
 	logName << "agents_" << getId();
-
-	const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
+    
+    const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
 	for(int i=0; i<randomConfig._numAgents; i++)
 	{
 		if((i%getNumTasks())==getId())

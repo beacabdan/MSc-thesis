@@ -26,6 +26,7 @@ class RandomWorld : public Engine::World
     void createAgents();
     float L(int, int);
     int chooseRandom(std::vector<double>);
+    float getActivationByAllAgents(Engine::Agent&);
 
 public:	
     std::vector<T> _pos_spr_coeff;
