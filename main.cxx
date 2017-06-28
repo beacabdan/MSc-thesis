@@ -6,6 +6,7 @@
 #include <eigen3/Eigen/Dense>
 
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 
 Eigen::IOFormat OctaveFmt(3, 0, ", ", ";\n", "", "", "[", "]");
@@ -42,6 +43,9 @@ int main(int argc, char *argv[])
         if(argc>2) throw Engine::Exception("USAGE: randomWalkers [config file]");
         std::string fileName("config.xml");
         if(argc!=1) fileName = argv[1];
+        
+        std::ofstream outputCost;
+        outputCost.open("logs/outputCost.m");
 
         Examples::RandomWorldConfig * randomConfig =  new Examples::RandomWorldConfig(fileName);
 
@@ -165,7 +169,7 @@ int main(int argc, char *argv[])
             {
                 for (int k_ = 0; k_ < numBasis; k_++)
                     if(abs(theta.at(k_+numBasis*k)*phi_k_weighted.at(k_+numBasis*k)) > theta_phi_sum) theta_phi_sum = abs(theta.at(k_+numBasis*k)*phi_k_weighted.at(k_+numBasis*k));
-            }            
+            }
             for (int k = 0; k < numBasis; k++)
             {
                 for (int k_ = 0; k_ < numBasis; k_++)
@@ -175,12 +179,17 @@ int main(int argc, char *argv[])
             std::cout << std::endl;
         }
         
+        //output average costs + matlab code to plot figure
         std::cout << "AVERAGE COSTS:" << std::endl;
+        outputCost << "costs = [";
         for (auto average : average_costs)
         {
             std::cout << average << "\t";
+            outputCost << average << "\t";
         }
+        outputCost << "];\nfig = figure;\nplot(costs, 'k');\nxlabel('Iteration');\nylabel('Average rollout cost');";
         std::cout << std::endl;
+        outputCost.close();        
     }
     catch( std::exception & exceptionThrown )
     {
