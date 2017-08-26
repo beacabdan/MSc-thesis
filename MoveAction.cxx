@@ -18,11 +18,13 @@ MoveAction::~MoveAction()
 } 
 
 void MoveAction::execute( Engine::Agent & agent )
-{	
+{		
     //ask the world where to move to
 	Examples::RandomWorld * ranworld = (Examples::RandomWorld *) agent.getWorld();
-    Engine::Point2D<int> newPosition = ranworld->getAction(agent);
-	
+    Engine::Point2D<int> newPosition = ranworld->getJointAction(agent);
+    //Engine::Point2D<int> newPosition = ranworld->getAction(agent);
+    //Engine::Point2D<int> newPosition = ranworld->getJointDistributedAction(agent);
+    
     //if legal position, move agent
     if(ranworld->checkPosition(newPosition)) agent.setPosition(newPosition);
 }

@@ -26,6 +26,8 @@ public:
 
 	void setResources( int resources );
 	int getResources() const;
+    int friend_agent;
+    
 
 	////////////////////////////////////////////////
 	// This code has been automatically generated //

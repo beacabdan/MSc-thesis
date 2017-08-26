@@ -23,6 +23,7 @@ public:
     int _numBasisY;
     float _basisSigma;
     float _lambda;
+    float _gamma;
     float _learningRate;
     int _timeHorizon;
     
