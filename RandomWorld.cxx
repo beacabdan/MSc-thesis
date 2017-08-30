@@ -73,7 +73,6 @@ void RandomWorld::initJointQ_twoAgents_old()
         for(auto pos2:getBoundaries())
         {
             std::cout << counter << std::endl;
-            //std::cout << _ji2val(pos) << " " << _ji2val(pos2) << std::endl;
             
             int columnCounter = 0;
             
@@ -86,8 +85,6 @@ void RandomWorld::initJointQ_twoAgents_old()
                 for(auto tpos2:getBoundaries())
                 {
                     //all target combinations of ag1 and ag2
-                    /**std::cout << pos << " " << tpos << " and " << pos2 << " " << tpos2 << std::endl;
-                    std::cout << isLegalAction(pos, tpos) << " and " << isLegalAction(pos2, tpos2) << std::endl;*/
                     if (isLegalAction(pos, tpos) && isLegalAction(pos2, tpos2))
                     {
                         neighboursOfCurrent.push_back(columnCounter);
@@ -99,9 +96,6 @@ void RandomWorld::initJointQ_twoAgents_old()
             for (auto column:neighboursOfCurrent)
             {
                 //legal actions from pos, pos2
-                /**int agent1 = (column - column % size) / size;
-                int agent2 = column % size;
-                std::cout << _ji2val(pos) << " -> " << agent1 << " and " << _ji2val(pos2) << " -> " << agent2 << std::endl;*/
                 transitionProb[column] = 1.0/neighboursOfCurrent.size();
             }
             
@@ -158,9 +152,6 @@ void RandomWorld::initJointQ_twoAgents(std::vector<Tf> * _jointQ_sparse_common)
             
             for (auto column:neighboursOfCurrent)
             {
-                /*int agent1 = (column - column % size) / size;
-                int agent2 = column % size;
-                std::cout << _ji2val(pos) << " -> " << agent1 << " and " << _ji2val(pos2) << " -> " << agent2 << std::endl;*/
                 _jointQ_sparse_common->push_back(Tf(
                     counter,
                     column,
@@ -168,7 +159,6 @@ void RandomWorld::initJointQ_twoAgents(std::vector<Tf> * _jointQ_sparse_common)
                     ));
             }
             counter++; //row
-            //std::cout << _ji2val(pos) << "\t" << _ji2val(pos2) << std::endl;
         }
     }
 }
@@ -203,23 +193,14 @@ void RandomWorld::initBasis()
     int numBasis = randomConfig._numBasisX;
     int numRewards = randomConfig._numRewards;
     
-    //compute positions of basis
-    int leftMargin = width % numBasis;
-    int topMargin = height % numBasis;
-    int xGap = (width - leftMargin) / numBasis;
-    int yGap = (height - topMargin) / numBasis;
-    leftMargin = (leftMargin + leftMargin % 2) / 2;
-    topMargin = (topMargin + topMargin % 2) / 2;
-    
     for(auto index:getBoundaries())
     {
         int x = index._x;
         int y = index._y;
         int indx = _ji2val(index);
-                        
-        //if (indx == 0+1+width || indx == width-1-1+width || indx == (height-1-1)*width+1 || indx == (height-1)*width-1-1) //corners
-        if (indx == 0 || indx == (width*(height/2)+width/2) || indx == width*height-1) //only 3 basis
-        //if ((x + 1 - leftMargin - (xGap + xGap % 2) / 2) % xGap == 0 && x + 1 - leftMargin - (xGap + xGap % 2) / 2 >= 0 && x < width - (width % numBasis) / 2 && (y + 1 - topMargin - (yGap + yGap % 2) / 2) % yGap == 0 && y + 1 - topMargin - (yGap + yGap % 2) / 2 >= 0 && y < height - (height % numBasis) / 2)
+        
+        if (indx == 0+1+width || indx == width-1-1+width || indx == (height-1-1)*width+1 || indx == (height-1)*width-1-1) //4 corners
+        //if (indx == 0 || indx == (width*(height/2)+width/2) || indx == width*height-1) //only 3 basis (diagonal)
         {
             setMaxValue("centerRBF", index, 5);
             setValue("centerRBF", index, 5);
@@ -437,7 +418,7 @@ float RandomWorld::getActivationByAllAgents(Engine::Agent& ag)
         if (a == &ag) continue;
 
         std::vector<float> phi_stored = _phi.at(this->_ji2val(a->getPosition()));
-        for (int k = 0; k < numBasis; k++) activation_ += phi_stored.at(k) * this->theta.at(k); //extra features not needed ?
+        for (int k = 0; k < numBasis; k++) activation_ += phi_stored.at(k) * this->theta.at(k);
     }
     
     return exp(activation_/lambda);
@@ -452,9 +433,6 @@ Engine::Point2D<int> RandomWorld::getJointAction(Engine::Agent& a)
         
     int agent1 = (nextJointAction_distr.at(index) - nextJointAction_distr.at(index) % size) / size;
     int agent2 = nextJointAction_distr.at(index) % size;
-    
-    //std::cout << "asking for action for " << a.getId() << " in position " << index << std::endl;
-    //std::cout << "agent1 " << agent1 << " agent2 " << agent2 << std::endl;
     
     if(std::stoi(a.getId())%2 == 0) return _val2ji(agent1);
     else return _val2ji(agent2);
@@ -586,6 +564,7 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
     neighbours.push_back(Engine::Point2D<int> (pos._x, pos._y-1));  
 
     float psi_joint = this->getActivationByAllAgents(a);
+    
     //for each of the possible target cells
     for(auto targetCell : neighbours) 
     {
@@ -647,9 +626,7 @@ Engine::Point2D<int> RandomWorld::getAction(Engine::Agent& a)
 }
 
 int RandomWorld::computeJointAction(int agent1id)
-{
-    //std::cout << "computing action for " << agent1id << " and " << agent1id + 1 << std::endl;
-    
+{    
     const RandomWorldConfig & randomConfig = (const RandomWorldConfig&)getConfig();
     int size = getBoundaries()._size._width * getBoundaries()._size._height;
     
@@ -731,10 +708,7 @@ int RandomWorld::computeJointAction(int agent1id)
         std::cout << "\033[1;31m\nExiting execution because log of q over p doesn't have a value.\033[0m" << std::endl;
         exit(0);
     }
-    
-    /*std::cout << agentPos.at(0) << " " << agentPos.at(1) << std::endl;
-    std::cout << neighbours.at(index) << std::endl;*/
-    
+        
     nextJointAction = neighbours.at(index);
     return nextJointAction;
 }

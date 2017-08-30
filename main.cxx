@@ -64,23 +64,7 @@ int main(int argc, char *argv[])
         std::vector<double> confidence_intervals_positive;
         std::vector<double> confidence_intervals_negative;
         std::vector<double> standard_dev;
-        
-        std::ofstream outputCost;
-        std::string path = "logs/";
-        std::string sim = "pairs_" + std::to_string(maxAgents) + "agents_";
-        outputCost.open(path + sim + "gamma" + std::to_string((int)(gamma*10)) + "bases" + std::to_string(numBasis) + "grid" + std::to_string(gridSize*gridSize) + ".m");
-        outputCost << "% lambda = " << lambda << std::endl;
-        outputCost << "% eta = " << eta << std::endl;
-        outputCost << "% gamma = " << gamma << std::endl;
-        outputCost << std::endl;
-        outputCost << "% iterations = " << maxIt << std::endl;
-        outputCost << "% rollouts = " << maxRolls << std::endl;
-        outputCost << "% grid size = " << gridSize << "x" << gridSize << std::endl;
-        outputCost << "% num agents = " << maxAgents << std::endl;
-        outputCost << "% num bases = " << numBasis << std::endl;
-        outputCost << "% sigma = " << sigma << std::endl;
-        outputCost << std::endl;
-        
+              
         for(int i=0; i<maxIt; i++) 
         {
             std::cout << "\033[1;33m\n" << "ITERATION " << i << "\033[0m" << std::endl;
@@ -101,7 +85,7 @@ int main(int argc, char *argv[])
             double average_hare = 0;
             int stagCounter = 0;
             
-            // Execute tau rollouts
+            //execute tau rollouts
             while (tau < maxRolls || !goal_reached)            
             {
                 Examples::RandomWorld world(new Examples::RandomWorldConfig(fileName), world.useOpenMPSingleNode());
@@ -143,7 +127,7 @@ int main(int argc, char *argv[])
                 
                 //rollout summary
                 std::cout << "Iteration: " << i << ", cost: " << (int)costSum << " <- Stags: " << world.stagCounter << ", Hares: " << world.hareCounter << " -> " << current_omega << std::endl;
-                average_cost += costSum;//maxSteps*maxAgents-world.stagCounter-world.hareCounter;
+                average_cost += costSum;
                 average_stag += world.stagCounter;
                 average_hare += world.hareCounter;
                 
@@ -206,32 +190,7 @@ int main(int argc, char *argv[])
             }
             std::cout << std::endl;
         }
-        
-        //output average costs + matlab code to plot figure
-        std::cout << "AVERAGE COSTS:" << std::endl;
-        outputCost << "costs = [";
-        for (auto average : average_costs)
-        {
-            std::cout << average << "\t";
-            outputCost << average << "\t";
-        }            
-        outputCost << ";\t";
-        for (auto average : confidence_intervals_positive)
-        {
-            outputCost << average << "\t";
-        }            
-        outputCost << ";\t";
-        for (auto average : confidence_intervals_negative)
-        {
-            outputCost << average << "\t";
-        }
-        outputCost << ";\t";
-        outputCost << "];\n% , 'k', 'LineWidth', 2);\nfig = figure;\nhold on;\nplot(costs(1,:), 'k', 'LineWidth', 2);\nyyaxis right;\nplot(costs(2,:));\nplot(costs(3,:));\nxlabel('Iteration');\nlegend('Average rollout cost', 'Average Stags', 'Average Hares');"; //ylim([0 110]);\n
-        outputCost << "\nprint('" << sim << "gamma" << std::to_string((int)(gamma*10)) << "bases" << std::to_string(numBasis) << "grid" << std::to_string(gridSize*gridSize) << "','-dpng');" << std::endl;
-        std::cout << std::endl;
-        
-        outputCost.close();     
-        
+               
         float maxavg = 0;
         for (auto average : average_costs)
             maxavg = (average > maxavg) ? average : maxavg;
@@ -244,13 +203,6 @@ int main(int argc, char *argv[])
             std::cout << std::endl;
         }
         std::cout << std::endl;
-        
-        float gamma1 = randomConfig->_gamma;
-        float hare = 1.25/5.0;
-        float stag = 3.0/5.0;
-        float max_val = 10.0;
-        float max = ((exp(hare/gamma1) > exp(stag/gamma1)/2) ? exp(hare/gamma1) : exp(stag/gamma1)/2);            
-        std::cout << "Hare: " << max_val*(max-exp(hare/gamma1))/max << "\nStag: " << max_val*(max-(exp(stag/gamma1))/2)/max << std::endl;
     }
     catch( std::exception & exceptionThrown )
     {
